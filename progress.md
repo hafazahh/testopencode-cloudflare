@@ -48,3 +48,9 @@
 - Teknik: `.formBody()` → `.parseBody()` + cast `Record<string, string> & { get, getAll }`; `kategori.ts` `:first()` → `:first<{ n: number }>()` untuk item_count.
 - Verifikasi: `tsc` diagnostics total 0; `tscheck` {items,kategori,supplier,pelanggan}.ts → BERSIH; `git status --short` kosong.
 - Commit: `545dffa fix: Fase C2d — type error CRUD items/kategori/supplier/pelanggan`.
+
+## Sesi 7 — Recon Fase E (test suite + API surface, tanpa modifikasi)
+- Evaluasi semua skrip Python tes di `../testopencode/`: verify_security.py (headers/cookie/rate-limit/CSRF), test_fase2–7.py (CRUD + RBAC + seed + atomicity), naming & csrf/helper pola.
+- Evaluasi Worker: src/index.ts (middleware + CSP nonce), src/auth.ts (session/D1/rate-limit/PBKDF2), src/db.ts (D1 query layer + createPembelianTx/createPenjualanTx atomic), src/routes/* (18 file route), src/render.ts (37 render*), src/schema.ts (12 tabel).
+- Run local: `npm run dev` → wrangler dev --port 8790 (D1 miniflare). Test: `npm run test:local`.
+- Findings disimpan di findings.md (Fase E — Recon section): coverage per tes, API surface, command lokal, naming convention, open questions.

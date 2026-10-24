@@ -10,7 +10,7 @@ import {
   LOGIN_LOCKOUT_SECONDS,
 } from './context';
 import { renderLogin } from './render';
-import { getUserPermissions, listNonAdminUsers } from './db';
+import { getUserPermissions, listNonAdminUsers, getUserByUsername } from './db';
 
 /** Fase C2: 43 route Flask → Hono + auth/RBAC.
  *  - PBKDF2-SHA256 (maks 100.000 iterasi) — workerd tidak mendukung scrypt.
@@ -171,7 +171,7 @@ export function flashMiddleware(): MiddlewareHandler<AppEnv> {
       } catch {
         flashes = [];
       }
-      c.header('Set-Cookie', `testopencode_flash=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+      c.header('Set-Cookie', `testopencode_flash=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`, { append: true });
     }
     c.set('flash', flashes);
     await next();
@@ -181,7 +181,7 @@ export function flashMiddleware(): MiddlewareHandler<AppEnv> {
 export function flash(c: AppContext, category: string, message: string): void {
   const current = c.get('flash') as { category: string; message: string }[];
   const flashes = [...(current || []), { category, message }];
-  c.header('Set-Cookie', `testopencode_flash=${encodeURIComponent(JSON.stringify(flashes))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MAX_AGE}`);
+  c.header('Set-Cookie', `testopencode_flash=${encodeURIComponent(JSON.stringify(flashes))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MAX_AGE}`, { append: true });
 }
 
 export function loginRequired(): MiddlewareHandler<AppEnv> {
@@ -217,8 +217,8 @@ export function csrfProtect(): MiddlewareHandler<AppEnv> {
       await next();
       return;
     }
-    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string };
-    const submitted = form.get('csrf_token') || c.req.header('X-CSRF-Token');
+    const form = await c.req.parseBody() as Record<string, string>;
+    const submitted = (form['csrf_token'] ?? '') || c.req.header('X-CSRF-Token');
     const session = c.get('session');
     if (!submitted || !session || !session.csrf_token || !stringsEqual(String(submitted), session.csrf_token)) {
       return c.json({ error: 'CSRF token invalid' }, 403);
@@ -234,7 +234,8 @@ export async function loginPage(c: AppContext): Promise<Response> {
     const created = await createSession(c.env.DB, null);
     sessionId = created.id;
     c.set('session', created);
-    c.header('Set-Cookie', sessionCookie(created.id));
+    const isSecure = c.env.ENVIRONMENT === 'production' || c.req.header('X-Forwarded-Proto') === 'https';
+    c.header('Set-Cookie', sessionCookie(created.id, isSecure), { append: true });
   }
   const csrf = await getCsrfTokenForSession(c.env.DB, sessionId);
   const nonAdmin = await listNonAdminUsers(c.env.DB);
@@ -243,8 +244,8 @@ export async function loginPage(c: AppContext): Promise<Response> {
 
 export async function handleLogin(c: AppContext): Promise<Response> {
   const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string };
-  const username = String(form.get('username') || '').trim();
-  const password = String(form.get('password') || '');
+  const username = String((form['username'] ?? '') as string).trim();
+  const password = String(form['password'] ?? '');
   const session = c.get('session');
   const sessionId = session?.id ?? null;
   const ip = _clientIp(c);
@@ -254,41 +255,56 @@ export async function handleLogin(c: AppContext): Promise<Response> {
     return c.redirect('/login');
   }
 
-  if (sessionId) {
-    const { session: s, user } = await getSessionUser(c.env.DB, sessionId);
-    if (user && (await verifyPassword(password, user.password_hash))) {
-      clearLoginFailures(c, username, ip);
-      const fresh = await createSession(c.env.DB, user.id);
-      c.set('session', fresh);
-      c.set('userId', user.id);
-      c.header('Set-Cookie', sessionCookie(fresh.id));
-      flash(c, 'success', `Selamat datang, ${user.username}!`);
-      return c.redirect('/');
-    }
-    await deleteSession(c.env.DB, sessionId);
-    c.header('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
-  }
-
-  if (!username) {
+  // Kredensial WAJIB diperiksa untuk permintaan login pertama (pengguna anonim
+  // tidak punya sesi). Versi sebelumnya hanya memeriksa di dalam `if (sessionId)`,
+  // sehingga login pertama tidak pernah diverifikasi dan selalu ditolak.
+  if (!username || !password) {
+    recordLoginFailure(c, username, ip);
     flash(c, 'error', 'Username atau password salah!');
     return c.redirect('/login');
   }
 
-  recordLoginFailure(c, username, ip);
-  const attempts = _loginAttempts.get(_loginKey(ip, username))?.count ?? 0;
-  const left = LOGIN_MAX_ATTEMPTS - attempts;
-  if (left > 0 && left <= 2) {
-    flash(c, 'error', `Username atau password salah! Sisa ${left} percobaan sebelum akun terkunci sementara.`);
-  } else if (left <= 0) {
-    flash(c, 'error', 'Akun Anda sedang terkunci. Coba lagi dalam 15 menit.');
+  // Jadikan pencarian username sebagai sumber kebenaran. Kalau tidak ada sesi,
+  // ini satu-satunya pemeriksaan. Kalau ada sesi lama, sesi itu dibuang dan
+  // dibuat baru supaya sesi tidak bisa dipakai ulang untuk login lain.
+  const user = await getUserByUsername(c.env.DB, username);
+  const ok = user ? await verifyPassword(password, user.password_hash) : false;
+
+  if (!user || !ok) {
+    recordLoginFailure(c, username, ip);
+    const attempts = _loginAttempts.get(_loginKey(ip, username))?.count ?? 0;
+    const left = LOGIN_MAX_ATTEMPTS - attempts;
+    if (left > 0 && left <= 2) {
+      flash(c, 'error', `Username atau password salah! Sisa ${left} percobaan sebelum akun terkunci sementara.`);
+    } else if (left <= 0) {
+      flash(c, 'error', 'Akun Anda sedang terkunci. Coba lagi dalam 15 menit.');
+    } else {
+      flash(c, 'error', 'Username atau password salah!');
+    }
+    return c.redirect('/login');
   }
-  return c.redirect('/login');
+
+  clearLoginFailures(c, username, ip);
+
+  // Buang sesi lama bila ada, lalu buat sesi baru untuk user yang baru login.
+  if (sessionId) {
+    await deleteSession(c.env.DB, sessionId);
+    c.header('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`, { append: true });
+  }
+
+  const fresh = await createSession(c.env.DB, user.id);
+  c.set('session', fresh);
+  c.set('userId', user.id);
+  const isSecure = c.env.ENVIRONMENT === 'production' || c.req.header('X-Forwarded-Proto') === 'https';
+  c.header('Set-Cookie', sessionCookie(fresh.id, isSecure), { append: true });
+  flash(c, 'success', `Selamat datang, ${user.username}!`);
+  return c.redirect('/');
 }
 
 export async function handleLogout(c: AppContext): Promise<Response> {
   const session = c.get('session');
   if (session) await deleteSession(c.env.DB, session.id);
-  c.header('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+  c.header('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`, { append: true });
   flash(c, 'success', 'Anda telah logout.');
   return c.redirect('/login');
 }
@@ -337,8 +353,16 @@ function stringsEqual(a: string, b: string): boolean {
   return out === 0;
 }
 
-function sessionCookie(id: string): string {
-  return `${SESSION_COOKIE}=${id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_LIFE_MILLIS}`;
+function sessionCookie(id: string, isSecure = false): string {
+  const parts = [
+    `${SESSION_COOKIE}=${id}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${SESSION_LIFE_MILLIS}`,
+  ];
+  if (isSecure) parts.push('Secure');
+  return parts.join('; ');
 }
 
 function readCookie(header: string | null, name: string): string | null {

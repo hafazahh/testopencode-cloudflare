@@ -14,6 +14,15 @@
 
 // Tagged template: escape setiap interpolasi (string). Angka/null/boolean
 // di-String() aman; objek tidak diperbolehkan melewati ini.
+
+// Raw = penanda "ini HTML mentah, jangan di-escape".
+export class Raw {
+  constructor(public readonly value: string) {}
+}
+export function raw(htmlText: string): Raw {
+  return new Raw(htmlText);
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -31,7 +40,11 @@ export function html(
   for (let i = 0; i < values.length; i++) {
     out += strings[i];
     const v = values[i];
-    out += typeof v === 'string' ? escapeHtml(v) : String(v ?? '');
+    out += v instanceof Raw
+      ? v.value
+      : typeof v === 'string'
+        ? escapeHtml(v)
+        : String(v ?? '');
   }
   out += strings[strings.length - 1];
   return out;
@@ -91,7 +104,7 @@ const MENU_HREF: Record<string, string> = {
   laporan: '/laporan/penjualan',
 };
 
-function navLinks(user_perms: Record<string, string[]>): string {
+function navLinks(user_perms: Record<string, string[]>): Raw {
   const menu = user_perms.menu ?? [];
   const parts: string[] = [];
   for (const m of menu) {
@@ -108,15 +121,15 @@ function navLinks(user_perms: Record<string, string[]>): string {
     const href = MENU_HREF[m] ?? '/' + m;
     parts.push(`<a href="${href}" class="btn btn-nav">${label}</a>`);
   }
-  return parts.join('');
+  return raw(parts.join(''));
 }
 
-function flashHtml(flashMessages?: Flash[]): string {
-  if (!flashMessages || flashMessages.length === 0) return '';
+function flashHtml(flashMessages?: Flash[]): Raw {
+  if (!flashMessages || flashMessages.length === 0) return raw('');
   const alerts = flashMessages.map(
     (f) => `<div class="alert alert-${f.category}">${f.message}</div>`
   );
-  return '<div class="flash-messages">' + alerts.join('') + '</div>';
+  return raw('<div class="flash-messages">' + alerts.join('') + '</div>');
 }
 
 export function renderBase(props: LayoutProps): string {
@@ -137,26 +150,26 @@ export function renderBase(props: LayoutProps): string {
                 <nav>${navLinks(props.user_perms)}</nav>
                 <div class="user-info">
                     ${props.current_user
-                        ? html`
+                        ? raw(html`
                              <span>${props.current_user.username} (${props.current_user.role_nama})</span>
                              <form method="POST" action="/logout" style="display:inline;">
                                  <input type="hidden" name="csrf_token" value="${props.csrf_token}">
                                  <button type="submit" class="btn btn-small">Logout</button>
                              </form>
-                          `
+                          `)
                         : ''}
                 </div>
             </header>
             ${flashHtml(props.flashMessages)}
             <main>
-                ${props.content}
+                ${raw(props.content)}
             </main>
             <footer>
                 <p>CRUD Item &copy; 2024 - Cloudflare Workers + D1</p>
             </footer>
         </div>
         <script src="/static/confirm.js"></script>
-        ${props.contentScripts ?? ''}
+        ${raw(props.contentScripts ?? '')}
     </body>
     </html>
   `;
@@ -192,8 +205,8 @@ type RoleRow = { id: number; nama: string; deskripsi?: string; user_count?: numb
 
 function identity<T>(t: T): T { return t; }
 
-function csrfField(csrf: string): string {
-  return `<input type="hidden" name="csrf_token" value="${csrf}">`;
+function csrfField(csrf: string): Raw {
+  return raw(`<input type="hidden" name="csrf_token" value="${escapeHtml(csrf)}">`);
 }
 
 export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
