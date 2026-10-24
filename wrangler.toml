@@ -20,5 +20,7 @@ database_name = "testopencode-db"
 database_id = "016434ea-d911-4825-b20d-128df18c826b"
 
 [vars]
-ENVIRONMENT = "local"
-SITE_URL = "http://localhost:8790"
+# "production" untuk deploy sungguhan (session cookie dapat atribut Secure).
+# "local" hanya untuk `wrangler dev`.
+ENVIRONMENT = "production"
+SITE_URL = "https://testopencode-worker.choirulhaq.workers.dev"

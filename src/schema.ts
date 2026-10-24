@@ -152,4 +152,15 @@ CREATE INDEX IF NOT EXISTS idx_penjualan_nomor ON penjualan(nomor_transaksi);
 CREATE INDEX IF NOT EXISTS idx_stok_mutasi_item ON stok_mutasi(item_id);
 CREATE INDEX IF NOT EXISTS idx_stok_mutasi_referensi ON stok_mutasi(referensi_tipe, referensi_id);
 CREATE INDEX IF NOT EXISTS idx_stok_akhir_item ON stok_akhir(item_id);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER,
+  csrf_token TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 `;
