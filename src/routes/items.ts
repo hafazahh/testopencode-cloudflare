@@ -79,7 +79,7 @@ export function register(app: AppHono) {
     csrfProtect(),
     async (c) => {
       const db = c.env.DB;
-      const form = await c.req.formBody();
+      const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
       const nama = String(form.get('nama') || '').trim();
       const category = String(form.get('category') || '').trim();
       const harga_pokok = parseFloat(String(form.get('harga_pokok') || '0'));
@@ -142,7 +142,7 @@ export function register(app: AppHono) {
         flash(c, 'error', 'Item tidak ditemukan!');
         return c.redirect('/');
       }
-      const form = await c.req.formBody();
+      const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
       const nama = String(form.get('nama') || '').trim();
       const category = String(form.get('category') || '').trim();
       const harga_pokok = parseFloat(String(form.get('harga_pokok') || '0'));

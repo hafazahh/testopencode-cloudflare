@@ -46,7 +46,7 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    const itemCount = await db.prepare('SELECT COUNT(*) AS n FROM items WHERE category = ?').bind(kategori.nama).first();
+    const itemCount = await db.prepare('SELECT COUNT(*) AS n FROM items WHERE category = ?').bind(kategori.nama).first<{ n: number }>();
     return c.html(renderKategoriView({ kategori: kategori as KategoriRow, item_count: itemCount?.n ?? 0, csrf }));
   });
 
@@ -58,7 +58,7 @@ export function register(app: AppHono) {
 
   app.post('/kategori/create', loginRequired(), hasPermission('kategori', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const deskripsi = String(form.get('deskripsi') || '').trim();
 
@@ -103,7 +103,7 @@ export function register(app: AppHono) {
       flash(c, 'error', 'Kategori tidak ditemukan!');
       return c.redirect('/kategori');
     }
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const deskripsi = String(form.get('deskripsi') || '').trim();
 

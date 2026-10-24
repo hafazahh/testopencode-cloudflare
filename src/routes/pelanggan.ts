@@ -57,7 +57,7 @@ export function register(app: AppHono) {
 
   app.post('/pelanggan/create', loginRequired(), hasPermission('pelanggan', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const email = String(form.get('email') || '').trim();
     const telepon = String(form.get('telepon') || '').trim();
@@ -100,7 +100,7 @@ export function register(app: AppHono) {
       flash(c, 'error', 'Pelanggan tidak ditemukan!');
       return c.redirect('/pelanggan');
     }
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const email = String(form.get('email') || '').trim();
     const telepon = String(form.get('telepon') || '').trim();

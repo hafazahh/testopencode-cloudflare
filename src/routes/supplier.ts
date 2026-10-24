@@ -58,7 +58,7 @@ export function register(app: AppHono) {
 
   app.post('/supplier/create', loginRequired(), hasPermission('supplier', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const kontak = String(form.get('kontak') || '').trim();
     const alamat = String(form.get('alamat') || '').trim();
@@ -100,7 +100,7 @@ export function register(app: AppHono) {
       flash(c, 'error', 'Supplier tidak ditemukan!');
       return c.redirect('/supplier');
     }
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const kontak = String(form.get('kontak') || '').trim();
     const alamat = String(form.get('alamat') || '').trim();
