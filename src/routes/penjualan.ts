@@ -37,8 +37,8 @@ export function register(app: AppHono) {
         JOIN users u ON p.created_by = u.id
         ORDER BY p.created_at DESC
       `).all<PenjualanRow>();
-      const perms = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first();
-      return c.html(renderPenjualanIndex({ penjualan: toRows(rows), user_perms: perms || {}, csrf }));
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+      return c.html(renderPenjualanIndex({ penjualan: toRows(rows.results), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -62,7 +62,7 @@ export function register(app: AppHono) {
 
   app.post('/penjualan/create', loginRequired(), hasPermission('penjualan', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
-    const form = await c.req.formBody();
+    const form = await c.req.formData();
     const pelanggan_id = Number(form.get('pelanggan_id') || 0);
     const tanggal = String(form.get('tanggal') || '').trim();
     const catatan = String(form.get('catatan') || '').trim();

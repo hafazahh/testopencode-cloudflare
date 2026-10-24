@@ -37,8 +37,8 @@ export function register(app: AppHono) {
         JOIN users u ON p.created_by = u.id
         ORDER BY p.created_at DESC
       `).all<PembelianRow>();
-      const perms = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first();
-      return c.html(renderPembelianIndex({ pembelian: toRows(rows), user_perms: perms || {}, csrf }));
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+      return c.html(renderPembelianIndex({ pembelian: toRows(rows.results), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -46,10 +46,8 @@ export function register(app: AppHono) {
     const db = c.env.DB;
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    const suppliers = await listSupplier(db);
     const items = await db.prepare('SELECT id, nama, harga_pokok FROM items ORDER BY nama').all();
     return c.html(renderPembelianCreate({
-      suppliers: suppliers.map((s) => ({ id: s.id, nama: s.nama })),
       items: items.results as { id: number; nama: string; harga_pokok: number }[],
       csrf,
     }));
@@ -57,7 +55,7 @@ export function register(app: AppHono) {
 
   app.post('/pembelian/create', loginRequired(), hasPermission('pembelian', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
-    const form = await c.req.formBody();
+    const form = await c.req.formData();
     const supplier_id = Number(form.get('supplier_id') || 0);
     const tanggal = String(form.get('tanggal') || '').trim();
     const catatan = String(form.get('catatan') || '').trim();
