@@ -1,0 +1,25 @@
+# Cloudflare Worker — testopencode
+#
+# Port dari Flask + SQLite + Jinja2 (repo `hafazahh/testopencode`, 43 route,
+# 13 tabel) ke Workers + D1.
+#
+# CATATAN 2026-10-24 — Fase B (repo GitHub baru + D1 remote) DI-SKIP atas
+# permintaan user. `database_id` di bawah adalah PLACEHOLDER. `wrangler dev`
+# memakai D1 LOKAL (SQLite) sehingga Fase C–E tetap bisa dikembangkan dan
+# diverifikasi tanpa resource Cloudflare. Ganti dengan id asli saat Fase B
+# dikerjakan — jangan tambahkan `routes` ke file ini, custom domain diatur
+# lewat dashboard (lihat skill `cloudflare-worker-api`).
+
+name = "testopencode-worker"
+main = "src/index.ts"
+compatibility_date = "2026-10-24"
+
+# D1 — port dari database.db (SQLite) di repo Flask.
+[[d1_databases]]
+binding = "DB"
+database_name = "testopencode-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[vars]
+ENVIRONMENT = "local"
+SITE_URL = "http://localhost:8790"
