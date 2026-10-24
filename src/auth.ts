@@ -9,7 +9,7 @@ import {
   LOGIN_WINDOW_SECONDS,
   LOGIN_LOCKOUT_SECONDS,
 } from './context';
-import { renderLogin } from './render';
+import { renderLogin, renderError } from './render';
 import { getUserPermissions, listNonAdminUsers, getUserByUsername } from './db';
 
 /** Fase C2: 43 route Flask → Hono + auth/RBAC.
@@ -167,7 +167,11 @@ export function flashMiddleware(): MiddlewareHandler<AppEnv> {
     let flashes: { category: string; message: string }[] = [];
     if (raw) {
       try {
-        flashes = JSON.parse(raw);
+        // Cookie diset dengan encodeURIComponent() di flash(), jadi HARUS
+        // di-decode dulu. JSON.parse pada nilai mentah yang ter-encode selalu
+        // melempar exception, sehingga flash selalu kosong dan pesan error
+        // tidak pernah tampil di halaman login.
+        flashes = JSON.parse(decodeURIComponent(raw));
       } catch {
         flashes = [];
       }
@@ -221,7 +225,15 @@ export function csrfProtect(): MiddlewareHandler<AppEnv> {
     const submitted = (form['csrf_token'] ?? '') || c.req.header('X-CSRF-Token');
     const session = c.get('session');
     if (!submitted || !session || !session.csrf_token || !stringsEqual(String(submitted), session.csrf_token)) {
-      return c.json({ error: 'CSRF token invalid' }, 403);
+      // Paritas dengan Flask: 403 merender template error (HTML), bukan JSON.
+      // Flask `errorhandler(403)` merender `templates/error.html`; JSON di sini
+      // membuat parity test gagal dan pengguna tidak melihat halaman yang bisa dibaca.
+      return c.html(renderError({
+        code: '403',
+        title: 'Akses Ditolak',
+        message: 'Token CSRF tidak valid atau sudah kedaluwarsa. Muat ulang halaman dan coba lagi.',
+        csrf: session?.csrf_token ?? String(submitted ?? ''),
+      }), 403);
     }
     await next();
   };
@@ -239,7 +251,8 @@ export async function loginPage(c: AppContext): Promise<Response> {
   }
   const csrf = await getCsrfTokenForSession(c.env.DB, sessionId);
   const nonAdmin = await listNonAdminUsers(c.env.DB);
-  return c.html(renderLogin({ csrf, non_admin_users: nonAdmin }));
+  const flashMessages = c.get('flash') as { category: string; message: string }[];
+  return c.html(renderLogin({ csrf, non_admin_users: nonAdmin, flashMessages }));
 }
 
 export async function handleLogin(c: AppContext): Promise<Response> {

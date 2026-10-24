@@ -394,8 +394,8 @@ export function renderError(props: { code: string; title: string; message: strin
   });
 }
 
-export function renderLogin(props: { csrf: string; non_admin_users?: { username: string; role_nama: string }[] }): string {
-  const { csrf, non_admin_users = [] } = props;
+export function renderLogin(props: { csrf: string; non_admin_users?: { username: string; role_nama: string }[]; flashMessages?: Flash[] }): string {
+  const { csrf, non_admin_users = [], flashMessages } = props;
   const usersRows = non_admin_users.map(u => html`
     <tr>
       <td>${u.username}</td>
@@ -406,6 +406,9 @@ export function renderLogin(props: { csrf: string; non_admin_users?: { username:
     title: 'Login - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
+    // Tanpa ini pesan error (login gagal, lockout, dsb) tidak pernah tampil di
+    // halaman login — flash disimpan di cookie tapi tidak dirender.
+    flashMessages,
     content: html`
       <div class="container">
         <header><h1>Login</h1></header>
