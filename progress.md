@@ -36,3 +36,9 @@
 - Grep `script-src` headers.ts: mengandung `nonce-`, tanpa `unsafe-inline`.
 - Grep `password_plain` src/: bersih.
 - `render.ts` fungsi: 37 (>= 20).
+
+## Sesi 5 — Fase C2b (port route users/roles)
+- Perbaiki 10 diagnostic tipe di `src/routes/users.ts` (6) + `src/routes/roles.ts` (4).
+- Teknik: `.all<T>().results` (bukan D1Result), map objek UserRow eksplisit (tanpa spread dari db.UserRow), `c.req.parseBody()` + cast `Record<string, string> & { get, getAll }`, `JSON.parse` permissions → `Record<string, string[]>`, rename variabel `rows` → `roleRows` (no konflik dengan fungsi helper `rows`).
+- Verifikasi: `node scripts/tscheck.mjs` → grep users.ts/roles.ts → `BERSIH` (0 diagnostic).
+- Commit: `56a0be2 fix: Fase C2b — type error users/roles`; git status --short kosong.

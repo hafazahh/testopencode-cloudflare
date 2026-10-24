@@ -37,7 +37,19 @@ Kartu ini mengerjakan **Fase C1**: skema D1 + fungsi query.
 - [x] `grep "password_plain" src/`: bersih.
 - [x] `grep -c "export function render" src/render.ts`: 37 (>= 20).
 
+## Fase C2 — port route Flask → Hono (4 kartu)
+- [x] **C2a** — `src/auth.ts`, `src/context.ts`, `src/index.ts` (commit `075f79f`): 0 diagnostic.
+- [x] **C2b** — `src/routes/users.ts` + `src/routes/roles.ts` (commit `56a0be2`): 10 diagnostic → `BERSIH`.
+- [ ] C2c — (file lain: items/kategori/pelanggan/pembelian/penjualan/supplier)
+- [ ] C2d — tsc total 0.
+
 ## Aturan keras
+- JANGAN mengubah `/home/choirulhaq/venvProject/testopencode/` (arsip sumber).
+- JANGAN `git init` ulang, JANGAN tambah remote, JANGAN push.
+- JANGAN deploy (`wrangler deploy`).
+- JANGAN bawa `password_plain` dari Flask.
+- JANGAN fabrikasi data.
+- Commit per fase dengan pesan konvensional (`feat: ...`). Working tree bersih.
 - JANGAN mengubah `/home/choirulhaq/venvProject/testopencode/` (arsip sumber).
 - JANGAN `git init` ulang, JANGAN tambah remote, JANGAN push.
 - JANGAN deploy (`wrangler deploy`).

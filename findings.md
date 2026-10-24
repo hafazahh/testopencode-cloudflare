@@ -48,3 +48,11 @@ penjualan_detail, roles, stok_akhir, stok_mutasi, users.
 - `grep on*= static/ src/`: tidak ada inline handler.
 - `grep script-src src/headers.ts`: mengandung `nonce-`, tidak ada `unsafe-inline`.
 - `grep password_plain src/`: bersih.
+
+## Fase C2b — type error users/roles (commit `56a0be2`)
+- 10 diagnostic: 6 di `src/routes/users.ts` + 4 di `src/routes/roles.ts`.
+- Perbaikan:
+  - `users.ts`: `.all<UserRow>().results` (bukan D1Result); map UserRow eksplisit tanpa spread (`id/username/role_id/created_at/role_nama`); `c.req.parseBody()` + cast `Record<string, string> & { get, getAll }`; `JSON.parse` permissions → `Record<string, string[]>`; `user as UserRow` → objek `userView: UserRow` eksplisit.
+  - `roles.ts`: rename variabel `rows` → `roleRows` (konflik dengan fungsi helper `rows`); `JSON.parse(String(permsRow.permissions ?? ''))` → `Record<string, string[]>`; `c.req.parseBody()` + cast dengan `getAll`.
+- Verifikasi: `node scripts/tscheck.mjs` → `grep src/routes/users.ts src/routes/roles.ts` → kosong → `BERSIH`.
+- Kriteria diterima: 0 diagnostic pada dua file; `git log` memuat commit `56a0be2` (working tree clean).
