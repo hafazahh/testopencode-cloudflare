@@ -32,8 +32,9 @@ export function register(app: AppHono) {
       const db = c.env.DB;
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
-      const rows = await db.prepare('SELECT u.*, r.nama as role_nama FROM users u JOIN roles r ON u.role_id = r.id ORDER BY u.id DESC').all<UserRow>();
-      const perms = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first();
+      const rows = (await db.prepare('SELECT u.*, r.nama as role_nama FROM users u JOIN roles r ON u.role_id = r.id ORDER BY u.id DESC').all<UserRow>()).results;
+      const permsRow = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first();
+      const perms = permsRow ? (JSON.parse(String(permsRow.permissions ?? '')) as Record<string, string[]>) : {};
       return c.html(renderUsersIndex({ users: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
@@ -49,7 +50,14 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const role = await db.prepare('SELECT nama as role_nama FROM roles WHERE id = ?').bind(user.role_id).first();
-    return c.html(renderUsersView({ user: { ...user, role_nama: role?.role_nama ?? '' } as UserRow, csrf }));
+    const userView = {
+      id: user.id,
+      username: user.username,
+      role_id: user.role_id,
+      created_at: user.created_at,
+      role_nama: role?.role_nama ?? '',
+    } as UserRow;
+    return c.html(renderUsersView({ user: userView, csrf }));
   });
 
   app.get('/users/create', loginRequired(), hasPermission('users', 'create'), async (c) => {
@@ -62,7 +70,7 @@ export function register(app: AppHono) {
 
   app.post('/users/create', loginRequired(), hasPermission('users', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const username = String(form.get('username') || '').trim();
     const password = String(form.get('password') || '');
     const role_id = Number(form.get('role_id') || 0);
@@ -106,7 +114,14 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const roles = await listRoles(db);
-    return c.html(renderUsersEdit({ user: user as UserRow, roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
+    const userView: UserRow = {
+      id: user.id,
+      username: user.username,
+      role_id: user.role_id,
+      created_at: user.created_at,
+      role_nama: '',
+    };
+    return c.html(renderUsersEdit({ user: userView, roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
   });
 
   app.post('/users/:id/edit', loginRequired(), hasPermission('users', 'edit'), csrfProtect(), async (c) => {
@@ -117,7 +132,7 @@ export function register(app: AppHono) {
       flash(c, 'error', 'User tidak ditemukan!');
       return c.redirect('/users');
     }
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const username = String(form.get('username') || '').trim();
     const password = String(form.get('password') || '');
     const role_id = Number(form.get('role_id') || 0);

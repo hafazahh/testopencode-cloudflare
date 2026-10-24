@@ -36,11 +36,12 @@ export function register(app: AppHono) {
       const db = c.env.DB;
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
-      const rows = await listRoles(db);
-      const perms = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?")
+      const roleRows = await listRoles(db);
+      const permsRow = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?")
         .bind(c.get('userId') ?? 0)
         .first();
-      return c.html(renderRolesIndex({ roles: rows(rows), user_perms: perms || {}, csrf }));
+      const perms = permsRow ? (JSON.parse(String(permsRow.permissions ?? '')) as Record<string, string[]>) : {};
+      return c.html(renderRolesIndex({ roles: rows(roleRows), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -67,7 +68,7 @@ export function register(app: AppHono) {
 
   app.post('/roles/create', loginRequired(), hasPermission('roles', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const deskripsi = String(form.get('deskripsi') || '').trim();
 
@@ -118,7 +119,7 @@ export function register(app: AppHono) {
       flash(c, 'error', 'Role tidak ditemukan!');
       return c.redirect('/roles');
     }
-    const form = await c.req.formBody();
+    const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
     const nama = String(form.get('nama') || '').trim();
     const deskripsi = String(form.get('deskripsi') || '').trim();
 
