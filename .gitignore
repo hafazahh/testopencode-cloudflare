@@ -13,3 +13,7 @@ node_modules/
 
 # Arsip sumber Flask — referensi port, bukan bagian Worker.
 .archive-flask/
+
+# Bundle sementara dari harness test (scripts/tests/_harness.mjs).
+.tmp-bundle/
+scripts/.tmp-bundle/
