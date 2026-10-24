@@ -10,6 +10,6 @@ import {
 /** /login + /logout — public (login page is reachable by anyone). */
 export function register(app: AppHono) {
   app.get('/login', loginPage);
-  app.post('/login', csrfProtect, handleLogin);
-  app.post('/logout', csrfProtect, handleLogout);
+  app.post('/login', csrfProtect(), handleLogin);
+  app.post('/logout', csrfProtect(), handleLogout);
 }
