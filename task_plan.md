@@ -26,6 +26,17 @@ Kartu ini mengerjakan **Fase C1**: skema D1 + fungsi query.
 - [x] Baris: roles=3, kategori=4, users=1.
 - [x] Idempoten: seed 2x → baris tetap 3/4/1.
 
+## Fase D
+- [x] `src/headers.ts` — CSP (nonce `script-src`) + HSTS (hanya HTTPS, tanpa preload).
+- [x] `src/render.ts` — 37 `export function render*` (Jinja2 → template string, escape otomatis).
+- [x] `static/` — confirm.js, margin.js, pembelian.js, penjualan.js, kartu-stok.js, favicon.svg, style.css.
+- [x] `login.html` port — tanpa tabel `password_plain`.
+- [x] `tsc`: diagnostics total 0.
+- [x] `grep on*= static/ src/`: bersih.
+- [x] `grep "script-src" src/headers.ts`: mengandung `nonce-`, tidak `unsafe-inline`.
+- [x] `grep "password_plain" src/`: bersih.
+- [x] `grep -c "export function render" src/render.ts`: 37 (>= 20).
+
 ## Aturan keras
 - JANGAN mengubah `/home/choirulhaq/venvProject/testopencode/` (arsip sumber).
 - JANGAN `git init` ulang, JANGAN tambah remote, JANGAN push.

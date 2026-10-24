@@ -25,3 +25,14 @@
 - D1 lokal: 12 tabel.
 - Jumlah baris: 3/4/1.
 - `git log --oneline`: commit `feat:` per fase.
+
+## Sesi 4 — Fase D (port tampilan)
+- Port `headers.ts` (CSP nonce + HSTS).
+- Port `render.ts` (37 fungsi render dari 24 template Jinja2).
+- Salin static/ (confirm.js, margin.js, pembelian.js, penjualan.js, kartu-stok.js, favicon.svg, style.css).
+- Filter `password_plain` dari login.html.
+- `tsc`: diagnostics total 0.
+- Grep `on*=` di static/ src/: bersih.
+- Grep `script-src` headers.ts: mengandung `nonce-`, tanpa `unsafe-inline`.
+- Grep `password_plain` src/: bersih.
+- `render.ts` fungsi: 37 (>= 20).

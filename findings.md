@@ -38,3 +38,13 @@ penjualan_detail, roles, stok_akhir, stok_mutasi, users.
 - Schema D1 lokal: 12 tabel (`items` s/d `users`).
 - Baris: roles=3, kategori=4, users=1.
 - Idempoten: seed 2x → baris tetap 3/4/1.
+
+## Fase D — port tampilan (Jinja2 → template string + static JS + CSP headers)
+- `src/headers.ts`: `securityHeaders(_nonce, _isSecure)` — CSP dengan `script-src 'self' 'nonce-${_nonce}'`, X-Content-Type-Options: nosniff, X-Frame-Options: DENY, Referrer-Policy, Permissions-Policy, COOP/COEP, CORP, HSTS (hanya HTTPS, tanpa `preload`).
+- `src/render.ts`: 37 `export function render*` — setiap template Jinja2 jadi fungsi render string HTML lewat tagged template `html` (escape otomatis). Tidak ada inline handler `on*=` (CSP-safe).
+- `static/`: confirm.js, margin.js, pembelian.js, penjualan.js, kartu-stok.js, favicon.svg, style.css.
+- `login.html` port: tanpa tabel `password_plain` (password plaintext dihapus dari tampilan).
+- `tsc`: diagnostics total 0.
+- `grep on*= static/ src/`: tidak ada inline handler.
+- `grep script-src src/headers.ts`: mengandung `nonce-`, tidak ada `unsafe-inline`.
+- `grep password_plain src/`: bersih.
