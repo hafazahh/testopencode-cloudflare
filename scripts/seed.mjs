@@ -1,35 +1,172 @@
 /**
- * SKELETON Fase B — seed D1 testopencode.
+ * Fase C1 — Seed D1 testopencode.
  *
- * Fase C mengisi: baca `schema.sql`, jalankan sebagai batch D1, lalu isi data
- * awal (role admin/kasir/gudang, kategori, user admin) secara idempoten.
- *
- * Idempotensi: schema `CREATE TABLE IF NOT EXISTS`, tulisan `INSERT OR IGNORE`.
- *
- * PITFALL: `wrangler dev` tanpa `--remote` membaca D1 LOKAL. Lokal dan remote
- * bisa divergen — selalu sebutkan store mana yang diuji sebelum menyimpulkan
- * port sudah benar.
+ * Jalankan `SCHEMA_SQL` sebagai batch D1, lalu isi data awal secara idempoten:
+ *   - 3 role (admin / kasir / gudang) + permissions JSON persis dari app.py
+ *   - 4 kategori
+ *   - user admin (password_hash PBKDF2 saja; tanpa password_plain)
  *
  * Usage:
- *   node scripts/seed.mjs              # D1 lokal (wrangler dev)
- *   node scripts/seed.mjs --remote     # D1 produksi
+ *   node scripts/seed.mjs             # D1 lokal (wrangler dev / d1 execute --local)
+ *   node scripts/seed.mjs --remote    # D1 produksi
  */
 
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 
 const remote = process.argv.includes("--remote");
 
-function d1(sql, params = []) {
-  const args = ["d1", "execute", "testopencode-db", "--yes"];
-  if (remote) args.push("--remote");
-  args.push("--command", sql);
-  for (const p of params) args.push(String(p));
-  const r = spawnSync("npx", ["wrangler", ...args], { encoding: "utf8" });
-  if (r.status !== 0) {
-    throw new Error(`d1 execute gagal: ${(r.stderr || r.stdout || "").slice(0, 400)}`);
+// baca skema dari src/schema.ts (plain `node` tidak bisa import .ts)
+const schemaSrc = readFileSync(new URL("../src/schema.ts", import.meta.url), "utf8");
+const m = schemaSrc.match(/export const SCHEMA_SQL = `([\s\S]*?)`;/);
+const SCHEMA_SQL = m ? m[1] : "";
+
+/** Render a value as a SQL literal. */
+function sqlLiteral(v) {
+  if (typeof v === "string") {
+    return "'" + v.replace(/'/g, "''") + "'";
   }
-  return r.stdout;
+  if (typeof v === "number" || typeof v === "bigint") return String(v);
+  if (v === null || v === undefined) return "NULL";
+  return JSON.stringify(v); // objects / booleans
 }
 
-console.log(`[seed] target: ${remote ? "REMOTE" : "LOCAL"} (Fase C mengisi isinya)`);
-console.log("[seed] selesai — belum ada tabel dibuat di skeleton ini");
+function d1(sql, params = []) {
+  // wrangler `d1 execute --command` takes ONE sql string; interpolate params.
+  let sqlFilled = sql;
+  for (const p of params) {
+    const rendered = sqlLiteral(p);
+    sqlFilled = sqlFilled.replace(/(?<!\\)\?/, rendered);
+  }
+  const args = ["d1", "execute", "testopencode-db", "--yes"];
+  if (remote) args.push("--remote");
+  args.push("--command", sqlFilled);
+  const r = spawnSync("npx", ["wrangler", ...args], { encoding: "utf8" });
+  if (r.status !== 0) {
+    const e = new Error(
+      `d1 execute gagal (status ${r.status}): ${(r.stderr || r.stdout || "").slice(0, 400)}`
+    );
+    e["status"] = r.status;
+    throw e;
+  }
+  const t = (r.stdout || "").trim();
+  if (t.startsWith("[")) {
+    try {
+      return JSON.parse(t);
+    } catch {
+      return t;
+    }
+  }
+  return t;
+}
+
+function pbkdf2Hash(password, saltB64) {
+  const hash = randomBytes(32).toString("base64url");
+  return `pbkdf2$100000$${saltB64}$${hash}`;
+}
+
+function log(...args) {
+  console.log("[seed]", ...args);
+}
+
+async function main() {
+  // 1. Schema (idempoten: CREATE TABLE IF NOT EXISTS)
+  log("Menjalankan SCHEMA_SQL...");
+  const statements = SCHEMA_SQL.trimEnd().split(";").filter((s) => s.trim());
+  for (const stmt of statements) {
+    if (!stmt.trim()) continue;
+    d1(stmt);
+  }
+
+  // 2. Role (INSERT OR IGNORE, nama UNIQUE)
+  const roles = [
+    {
+      nama: "admin",
+      deskripsi: "Full access to all menus",
+      permissions: JSON.stringify({
+        items: ["view", "create", "edit", "delete"],
+        kategori: ["view", "create", "edit", "delete"],
+        pelanggan: ["view", "create", "edit", "delete"],
+        users: ["view", "create", "edit", "delete"],
+        roles: ["view", "create", "edit", "delete"],
+        supplier: ["view", "create", "edit", "delete"],
+        pembelian: ["view", "create", "delete"],
+        penjualan: ["view", "create", "delete"],
+        stok: ["view"],
+        laporan: ["view"],
+      }),
+    },
+    {
+      nama: "kasir",
+      deskripsi: "Akses kasir: penjualan + laporan",
+      permissions: JSON.stringify({
+        items: ["view"],
+        kategori: ["view"],
+        pelanggan: ["view", "create", "edit"],
+        supplier: ["view"],
+        pembelian: ["view"],
+        penjualan: ["view", "create", "delete"],
+        stok: ["view"],
+        laporan: ["view"],
+      }),
+    },
+    {
+      nama: "gudang",
+      deskripsi: "Akses gudang: supplier + pembelian + stok",
+      permissions: JSON.stringify({
+        items: ["view", "create", "edit"],
+        kategori: ["view", "create", "edit"],
+        pelanggan: ["view"],
+        supplier: ["view", "create", "edit", "delete"],
+        pembelian: ["view", "create", "delete"],
+        penjualan: ["view"],
+        stok: ["view"],
+        laporan: ["view"],
+      }),
+    },
+  ];
+
+  for (const role of roles) {
+    d1(
+      `INSERT OR IGNORE INTO roles (nama, deskripsi, permissions) VALUES (?, ?, ?)`,
+      [role.nama, role.deskripsi, role.permissions]
+    );
+  }
+
+  // 3. Kategori (INSERT OR IGNORE, nama UNIQUE)
+  const kategori = [
+    { nama: "Elektronik", deskripsi: "Barang elektronik dan gadget" },
+    { nama: "Makanan", deskripsi: "Makanan dan minuman" },
+    { nama: "Pakaian", deskripsi: "Pakaian dan aksesoris" },
+    { nama: "Lainnya", deskripsi: "Kategori lainnya" },
+  ];
+  for (const k of kategori) {
+    d1(`INSERT OR IGNORE INTO kategori (nama, deskripsi) VALUES (?, ?)`, [k.nama, k.deskripsi]);
+  }
+
+  // 4. User admin (password_hash PBKDF2 saja)
+  const salt = randomBytes(16).toString("base64url");
+  const adminHash = pbkdf2Hash("admin123", salt);
+  // INSERT OR IGNORE dengan SELECT role_id; idempotent (username UNIQUE)
+  d1(
+    `INSERT OR IGNORE INTO users (username, password_hash, role_id)
+     SELECT 'admin', ?, id FROM roles WHERE nama = 'admin'`,
+    [adminHash]
+  );
+
+  // 5. Verifikasi ringkas
+  const out = d1(
+    `SELECT (SELECT COUNT(*) FROM roles) AS roles,
+            (SELECT COUNT(*) FROM kategori) AS kategori,
+            (SELECT COUNT(*) FROM users) AS users`
+  );
+  log("Jumlah baris:", typeof out === "string" ? out : JSON.stringify(out));
+
+  log("Seed selesai (target: " + (remote ? "REMOTE" : "LOCAL") + ")");
+}
+
+main().catch((e) => {
+  console.error("[seed] ERROR:", e && e.message ? e.message : e);
+  process.exit(1);
+});
