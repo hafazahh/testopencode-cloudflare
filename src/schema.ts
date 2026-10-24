@@ -3,7 +3,7 @@
  * Port dari `init_db()` di `app.py` (repo Flask `testopencode`) — 12 tabel.
  *
  * Perubahan vs Flask:
- *   - `users` TIDAK mengandung kolom `password_plain` (aturan keras kartu C1).
+ *   - `users` tidak memiliki kolom plaintext password (aturan keras kartu C1).
  *   - `margin` pada `items` tetap `GENERATED ALWAYS AS (harga_jual - harga_pokok) STORED`
  *     (D1 mendukung generated column; dicek di seed.mjs).
  *   - Foreign-key constraints: `ON DELETE RESTRICT` (supplier/pembelian/penjualan),
