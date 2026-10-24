@@ -44,7 +44,7 @@ export function register(app: AppHono) {
       }
       sql += ' ORDER BY p.tanggal DESC, p.nomor_transaksi ASC';
 
-      const result = await db.prepare(sql).bind(params).all<LaporanDetailRow>();
+      const result = await db.prepare(sql).bind(...params).all<LaporanDetailRow>();
       const details = result.results as LaporanDetailRow[];
 
       const total_transaksi = new Set(details.map((d) => d.nomor_transaksi)).size;

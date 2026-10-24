@@ -1146,17 +1146,20 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
           <div class="form-group" style="margin-bottom:0;">
             <label for="item_id" style="display:inline; margin-right:8px;">Pilih Item</label>
             <select name="item_id" id="item_id" style="width:auto; display:inline-block;">
-              ${items.map(i => html`<option value="${i.id}" ${i.id == selected_item.id ? 'selected' : ''}>${i.nama}</option>`)}
+              ${items.map(i => html`<option value="${i.id}" ${selected_item && i.id == selected_item.id ? 'selected' : ''}>${i.nama}</option>`)}
             </select>
             <button type="submit" class="btn btn-primary btn-sm" style="margin-left:8px;">Tampilkan</button>
           </div>
         </form>
       </div>
+      ${selected_item
+        ? html`
       <div class="detail-card">
         <div class="detail-row"><span class="detail-label">Item</span><span class="detail-value">${selected_item.nama}</span></div>
         <div class="detail-row"><span class="detail-label">Stok Akhir</span><span class="detail-value">${selected_item.stok_akhir ?? 0}</span></div>
         <div class="detail-row"><span class="detail-label">HPP Rata-rata</span><span class="detail-value">Rp ${formatRupiah(selected_item.harga_pokok)}</span></div>
-      </div>
+      </div>`
+        : html`<div class="empty-state"><p>Belum ada item. Tambahkan item terlebih dahulu.</p></div>`}
       ${mutasi.length
         ? html`<table class="data-table">
             <thead>
