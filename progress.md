@@ -42,3 +42,9 @@
 - Teknik: `.all<T>().results` (bukan D1Result), map objek UserRow eksplisit (tanpa spread dari db.UserRow), `c.req.parseBody()` + cast `Record<string, string> & { get, getAll }`, `JSON.parse` permissions → `Record<string, string[]>`, rename variabel `rows` → `roleRows` (no konflik dengan fungsi helper `rows`).
 - Verifikasi: `node scripts/tscheck.mjs` → grep users.ts/roles.ts → `BERSIH` (0 diagnostic).
 - Commit: `56a0be2 fix: Fase C2b — type error users/roles`; git status --short kosong.
+
+## Sesi 6 — Fase C2d (type error CRUD items/kategori/supplier/pelanggan)
+- Bersihkan 9 diagnostic tipe di 4 file: items.ts (2), kategori.ts (3), supplier.ts (2), pelanggan.ts (2).
+- Teknik: `.formBody()` → `.parseBody()` + cast `Record<string, string> & { get, getAll }`; `kategori.ts` `:first()` → `:first<{ n: number }>()` untuk item_count.
+- Verifikasi: `tsc` diagnostics total 0; `tscheck` {items,kategori,supplier,pelanggan}.ts → BERSIH; `git status --short` kosong.
+- Commit: `545dffa fix: Fase C2d — type error CRUD items/kategori/supplier/pelanggan`.

@@ -41,7 +41,7 @@ Kartu ini mengerjakan **Fase C1**: skema D1 + fungsi query.
 - [x] **C2a** — `src/auth.ts`, `src/context.ts`, `src/index.ts` (commit `075f79f`): 0 diagnostic.
 - [x] **C2b** — `src/routes/users.ts` + `src/routes/roles.ts` (commit `56a0be2`): 10 diagnostic → `BERSIH`.
 - [ ] C2c — (file lain: items/kategori/pelanggan/pembelian/penjualan/supplier)
-- [ ] C2d — tsc total 0.
+- [x] **C2d** — `src/routes/items.ts` + `src/routes/kategori.ts` + `src/routes/supplier.ts` + `src/routes/pelanggan.ts` (commit `545dffa`): 9 diagnostic → `BERSIH` (0 total).
 
 ## Aturan keras
 - JANGAN mengubah `/home/choirulhaq/venvProject/testopencode/` (arsip sumber).
