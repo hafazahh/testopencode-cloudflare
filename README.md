@@ -15,19 +15,22 @@ Akar masalah: free tier Render punya kuota **750 instance-hours/bulan yang
 dibagi semua service gratis di akun**. Workers free = **100.000 request/hari
 tanpa batas jam bulanan**.
 
-## Status Fase B — skeleton lokal (2026-10-24)
+## Status Fase B — SELESAI (2026-10-24)
 
-**Fase B resmi (repo GitHub baru + D1 remote) DI-SKIP** atas permintaan user.
-Yang dibuat sekarang hanya **skeleton lokal** supaya Fase C–E tetap bisa jalan:
+- **Repo GitHub:** https://github.com/hafazahh/testopencode-cloudflare (public,
+  branch `main`, remote `origin` via SSH)
+- **D1:** `testopencode-db`, id `016434ea-d911-4825-b20d-128df18c826b`, region APAC
+- **Sudah di-seed ke remote:** 12 tabel + 3 role + 4 kategori + 1 user admin
+  (tanpa kolom `password_plain`)
+- **Belum:** `wrangler deploy` + custom domain (Fase F, menunggu persetujuan user)
 
-- `wrangler.toml` memakai `database_id` **placeholder**. `wrangler dev` memakai
-  **D1 lokal (SQLite)** — tidak perlu resource Cloudflare untuk mengembangkan
-  dan menguji.
-- Belum ada `git init`, belum ada remote, belum ada D1 remote.
+Custom domain diatur **lewat dashboard**, bukan lewat `routes` di `wrangler.toml`
+(menambah `routes` tidak bisa diandalkan mengaktifkan routing custom domain —
+lihat skill `cloudflare-worker-api`). Target domain: `crud.choirulhaq.com`
+(cutover setelah user menyetujui; Render lama dilepas lebih dulu).
 
-Saat Fase B dikerjakan: `git init` → repo `hafazahh/testopencode-cloudflare` →
-`wrangler d1 create testopencode-db` → isi `database_id` → `wrangler deploy` →
-custom domain **lewat dashboard** (bukan `routes` di `wrangler.toml`).
+`wrangler dev` memakai **D1 lokal (SQLite)** — pengembangan dan pengujian Fase C–E
+tidak bergantung pada resource Cloudflare.
 
 ## Struktur
 
