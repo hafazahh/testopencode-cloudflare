@@ -153,7 +153,7 @@ export function renderBase(props: LayoutProps): string {
                 <div class="user-info">
                     ${props.current_user
                         ? raw(html`
-                             <span>${props.current_user.username} (${props.current_user.role_nama})</span>
+                             <span>${props.current_user.username}${props.current_user.role_nama ? ` (${props.current_user.role_nama})` : ''}</span>
                              <form method="POST" action="/logout" style="display:inline;">
                                  <input type="hidden" name="csrf_token" value="${props.csrf_token}">
                                  <button type="submit" class="btn btn-small">Logout</button>
@@ -181,6 +181,11 @@ export function renderBase(props: LayoutProps): string {
 export interface BaseLayoutProps extends LayoutProps {
   contentScripts?: string;
 }
+
+/** Props bersama halaman: siapa yang sedang login (untuk info user + Logout). */
+export type PageProps = {
+  current_user?: { username: string; role_nama?: string };
+};
 
 export function renderBaseItem(props: BaseLayoutProps): string {
   return renderBase({
@@ -211,7 +216,7 @@ function csrfField(csrf: string): Raw {
   return raw(`<input type="hidden" name="csrf_token" value="${escapeHtml(csrf)}">`);
 }
 
-export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { items, user_perms, csrf } = props;
   const rows = items.map((item, i) => {
     const marginPct = formatPercent(item.margin, item.harga_pokok);
@@ -258,14 +263,14 @@ export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string
         </table>`
     : html`<div class="empty-state"><p>Belum ada item. <a href="/item/create">Tambah item pertama</a></p></div>`;
 
-  return renderBaseItem({ title: 'Daftar Item - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Item - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderViewItem(props: { item: ItemRow; csrf: string }): string {
+export function renderViewItem(props: { item: ItemRow; csrf: string } & PageProps): string {
   const { item, csrf } = props;
   const marginPct = formatPercent(item.margin, item.harga_pokok);
   const marginCls = item.margin > 0 ? 'margin-positive' : item.margin < 0 ? 'margin-negative' : '';
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: item.nama + ' - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -290,13 +295,13 @@ export function renderViewItem(props: { item: ItemRow; csrf: string }): string {
   });
 }
 
-export function renderCreateItem(props: { nama?: string; harga_pokok?: number; harga_jual?: number; category?: string; categories?: { nama: string }[]; csrf: string }): string {
+export function renderCreateItem(props: { nama?: string; harga_pokok?: number; harga_jual?: number; category?: string; categories?: { nama: string }[]; csrf: string } & PageProps): string {
   const { nama = '', harga_pokok = 0, harga_jual = 0, category = '', categories = [] } = props;
   const catOptions = categories.map((c) => {
     const selected = category === c.nama ? 'selected' : '';
     return html`<option value="${c.nama}" ${selected}>${c.nama}</option>`;
   }).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Item - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -331,14 +336,14 @@ export function renderCreateItem(props: { nama?: string; harga_pokok?: number; h
   });
 }
 
-export function renderEditItem(props: { item: ItemRow; categories: { nama: string }[]; csrf: string }): string {
+export function renderEditItem(props: { item: ItemRow; categories: { nama: string }[]; csrf: string } & PageProps): string {
   const { item, categories, csrf } = props;
   const catOptions = categories.map((c) => {
     const selected = item.category === c.nama ? 'selected' : '';
     return html`<option value="${c.nama}" ${selected}>${c.nama}</option>`;
   }).join('');
   const marginVal = item.harga_jual - item.harga_pokok;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Item - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -449,7 +454,7 @@ function emptyStateLink(href: string, text: string): string {
 // ---------- kategori ----------
 type KategoriFormProps = { id?: number; nama: string; deskripsi?: string; created_at?: string };
 
-export function renderKategoriIndex(props: { kategori: KategoriRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderKategoriIndex(props: { kategori: KategoriRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { kategori, user_perms, csrf } = props;
   const rows = kategori.map((k, i) => {
     const edit = user_perms.kategori?.includes('edit')
@@ -487,12 +492,12 @@ export function renderKategoriIndex(props: { kategori: KategoriRow[]; user_perms
         <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/kategori/create', 'Tambah kategori pertama');
-  return renderBaseItem({ title: 'Daftar Kategori - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Kategori - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderKategoriCreate(props: { nama?: string; deskripsi?: string; csrf: string }): string {
+export function renderKategoriCreate(props: { nama?: string; deskripsi?: string; csrf: string } & PageProps): string {
   const { nama = '', deskripsi = '' } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Kategori - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -515,9 +520,9 @@ export function renderKategoriCreate(props: { nama?: string; deskripsi?: string;
   });
 }
 
-export function renderKategoriEdit(props: { kategori: KategoriFormProps; csrf: string }): string {
+export function renderKategoriEdit(props: { kategori: KategoriFormProps; csrf: string } & PageProps): string {
   const { kategori, csrf } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Kategori - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -540,9 +545,9 @@ export function renderKategoriEdit(props: { kategori: KategoriFormProps; csrf: s
   });
 }
 
-export function renderKategoriView(props: { kategori: KategoriFormProps; item_count: number; csrf: string }): string {
+export function renderKategoriView(props: { kategori: KategoriFormProps; item_count: number; csrf: string } & PageProps): string {
   const { kategori, item_count, csrf } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: kategori.nama + ' - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -567,7 +572,7 @@ export function renderKategoriView(props: { kategori: KategoriFormProps; item_co
 // ---------- pelanggan ----------
 type PelangganForm = { id: number; nama: string; email?: string; telepon?: string; alamat?: string; created_at?: string };
 
-export function renderPelangganIndex(props: { pelanggan: PelangganRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderPelangganIndex(props: { pelanggan: PelangganRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { pelanggan, user_perms, csrf } = props;
   const rows = pelanggan.map((p, i) => {
     const edit = user_perms.pelanggan?.includes('edit')
@@ -604,12 +609,12 @@ export function renderPelangganIndex(props: { pelanggan: PelangganRow[]; user_pe
         <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/pelanggan/create', 'Tambah pelanggan pertama');
-  return renderBaseItem({ title: 'Daftar Pelanggan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Pelanggan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderPelangganCreate(props: { nama?: string; email?: string; telepon?: string; alamat?: string; csrf: string }): string {
+export function renderPelangganCreate(props: { nama?: string; email?: string; telepon?: string; alamat?: string; csrf: string } & PageProps): string {
   const { nama = '', email = '', telepon = '', alamat = '' } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Pelanggan - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -640,9 +645,9 @@ export function renderPelangganCreate(props: { nama?: string; email?: string; te
   });
 }
 
-export function renderPelangganEdit(props: { pelanggan: PelangganForm; csrf: string }): string {
+export function renderPelangganEdit(props: { pelanggan: PelangganForm; csrf: string } & PageProps): string {
   const { pelanggan, csrf } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Pelanggan - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -673,9 +678,9 @@ export function renderPelangganEdit(props: { pelanggan: PelangganForm; csrf: str
   });
 }
 
-export function renderPelangganView(props: { pelanggan: PelangganForm; csrf: string }): string {
+export function renderPelangganView(props: { pelanggan: PelangganForm; csrf: string } & PageProps): string {
   const { pelanggan, csrf } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: pelanggan.nama + ' - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -701,7 +706,7 @@ export function renderPelangganView(props: { pelanggan: PelangganForm; csrf: str
 // ---------- supplier ----------
 type SupplierForm = { id: number; nama: string; kontak?: string; alamat?: string; created_at?: string };
 
-export function renderSupplierIndex(props: { suppliers: SupplierRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderSupplierIndex(props: { suppliers: SupplierRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { suppliers, user_perms, csrf } = props;
   const rows = suppliers.map((s, i) => {
     const edit = user_perms.supplier?.includes('edit')
@@ -737,12 +742,12 @@ export function renderSupplierIndex(props: { suppliers: SupplierRow[]; user_perm
         <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/supplier/create', 'Tambah supplier pertama');
-  return renderBaseItem({ title: 'Daftar Supplier - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Supplier - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderSupplierCreate(props: { nama?: string; kontak?: string; alamat?: string; csrf: string }): string {
+export function renderSupplierCreate(props: { nama?: string; kontak?: string; alamat?: string; csrf: string } & PageProps): string {
   const { nama = '', kontak = '', alamat = '' } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Supplier - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -769,9 +774,9 @@ export function renderSupplierCreate(props: { nama?: string; kontak?: string; al
   });
 }
 
-export function renderSupplierEdit(props: { supplier: SupplierForm; csrf: string }): string {
+export function renderSupplierEdit(props: { supplier: SupplierForm; csrf: string } & PageProps): string {
   const { supplier, csrf } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Supplier - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -798,9 +803,9 @@ export function renderSupplierEdit(props: { supplier: SupplierForm; csrf: string
   });
 }
 
-export function renderSupplierView(props: { supplier: SupplierForm; csrf: string }): string {
+export function renderSupplierView(props: { supplier: SupplierForm; csrf: string } & PageProps): string {
   const { supplier, csrf } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: supplier.nama + ' - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -825,7 +830,7 @@ export function renderSupplierView(props: { supplier: SupplierForm; csrf: string
 // ---------- pembelian ----------
 type PembelianForm = { id: number; nomor_transaksi: string; tanggal: string; supplier_nama: string; total: number; catatan?: string; created_by_username?: string; created_at?: string };
 
-export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { pembelian, user_perms, csrf } = props;
   const rows = pembelian.map((p, i) => {
     const del = user_perms.pembelian?.includes('delete')
@@ -860,13 +865,13 @@ export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_pe
         <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/pembelian/create', 'Tambah pembelian pertama');
-  return renderBaseItem({ title: 'Daftar Pembelian - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Pembelian - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderPembelianCreate(props: { items?: { id: number; nama: string; harga_pokok: number }[]; supplier_id?: number; tanggal?: string; catatan?: string; csrf: string }): string {
+export function renderPembelianCreate(props: { items?: { id: number; nama: string; harga_pokok: number }[]; supplier_id?: number; tanggal?: string; catatan?: string; csrf: string } & PageProps): string {
   const { items = [], tanggal = '', catatan = '' } = props;
   const itemsJson = items.map(i => JSON.stringify({ id: i.id, nama: i.nama, harga_pokok: i.harga_pokok })).join(',');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Pembelian - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -921,7 +926,7 @@ export function renderPembelianCreate(props: { items?: { id: number; nama: strin
   });
 }
 
-export function renderPembelianView(props: { pembelian: PembelianForm; detail: PembelianDetailRow[]; csrf: string }): string {
+export function renderPembelianView(props: { pembelian: PembelianForm; detail: PembelianDetailRow[]; csrf: string } & PageProps): string {
   const { pembelian, detail, csrf } = props;
   const detailRows = detail.map((d, i) => html`
     <tr>
@@ -932,7 +937,7 @@ export function renderPembelianView(props: { pembelian: PembelianForm; detail: P
       <td class="numeric">Rp ${d.subtotal.toLocaleString('id-ID')}</td>
     </tr>
   `).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: pembelian.nomor_transaksi + ' - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -973,7 +978,7 @@ export function renderPembelianView(props: { pembelian: PembelianForm; detail: P
 // ---------- penjualan ----------
 type PenjualanForm = { id: number; nomor_transaksi: string; tanggal: string; pelanggan_nama: string; total: number; catatan?: string; created_by_username?: string; created_at?: string };
 
-export function renderPenjualanIndex(props: { penjualan: PenjualanRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderPenjualanIndex(props: { penjualan: PenjualanRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { penjualan, user_perms, csrf } = props;
   const rows = penjualan.map((p, i) => {
     const del = user_perms.penjualan?.includes('delete')
@@ -1008,15 +1013,15 @@ export function renderPenjualanIndex(props: { penjualan: PenjualanRow[]; user_pe
         <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/penjualan/create', 'Tambah penjualan pertama');
-  return renderBaseItem({ title: 'Daftar Penjualan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Penjualan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: string }[]; items?: { id: number; nama: string; stok_akhir: number; harga_pokok: number }[]; tanggal?: string; catatan?: string; csrf: string }): string {
+export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: string }[]; items?: { id: number; nama: string; stok_akhir: number; harga_pokok: number }[]; tanggal?: string; catatan?: string; csrf: string } & PageProps): string {
   const { pelanggans = [], items = [], tanggal = '', catatan = '' } = props;
   const pelangganOptions = pelanggans.map(p => `<option value="${p.id}">${p.nama}</option>`).join('');
   const itemOptions = items.map(i => `<option value="${i.id}">${i.nama}</option>`).join('');
   const itemsJson = items.map(i => JSON.stringify({ id: i.id, nama: i.nama, stok_akhir: i.stok_akhir, harga_pokok: i.harga_pokok })).join(',');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Penjualan - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -1072,7 +1077,7 @@ export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: 
   });
 }
 
-export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: PenjualanDetailRow[]; csrf: string }): string {
+export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: PenjualanDetailRow[]; csrf: string } & PageProps): string {
   const { penjualan, detail, csrf } = props;
   const detailRows = detail.map((d, i) => html`
     <tr>
@@ -1084,7 +1089,7 @@ export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: P
       <td class="numeric">Rp ${d.subtotal.toLocaleString('id-ID')}</td>
     </tr>
   `).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: penjualan.nomor_transaksi + ' - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -1125,7 +1130,7 @@ export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: P
 // ---------- stok ----------
 type KartuForm = { id?: number; nama: string; stok_akhir?: number; harga_pokok?: number };
 
-export function renderStokKartu(props: { items: { id: number; nama: string }[]; selected_item: KartuForm; mutasi?: MutasiRow[]; csrf: string }): string {
+export function renderStokKartu(props: { items: { id: number; nama: string }[]; selected_item: KartuForm; mutasi?: MutasiRow[]; csrf: string } & PageProps): string {
   const { items, selected_item, mutasi = [], csrf } = props;
   const mutasiRows = mutasi.map((m, i) => html`
     <tr>
@@ -1137,7 +1142,7 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
       <td class="numeric">${m.saldo_berjalan}</td>
     </tr>
   `).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Kartu Stok - Sistem Inventory',
     user_perms: {},
     csrf_token: csrf,
@@ -1179,7 +1184,7 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
 }
 
 // ---------- laporan ----------
-export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; start_date?: string; end_date?: string; total_transaksi?: number; total_item?: number; total_penjualan?: number; total_margin?: number; csrf: string }): string {
+export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; start_date?: string; end_date?: string; total_transaksi?: number; total_item?: number; total_penjualan?: number; total_margin?: number; csrf: string } & PageProps): string {
   const { details = [], start_date = '', end_date = '', total_transaksi = 0, total_item = 0, total_penjualan = 0, total_margin = 0, csrf } = props;
   const detailRows = details.map((d, i) => {
     const margin = d.harga_jual - d.harga_pokok;
@@ -1198,7 +1203,7 @@ export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; st
       </tr>
     `;
   }).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Laporan Penjualan - Sistem Inventory',
     user_perms: {},
     csrf_token: csrf,
@@ -1239,7 +1244,7 @@ export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; st
   });
 }
 
-export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: number; total_value?: number; low_stock_count?: number; out_of_stock_count?: number; csrf: string }): string {
+export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: number; total_value?: number; low_stock_count?: number; out_of_stock_count?: number; csrf: string } & PageProps): string {
   const { items = [], total_items = 0, total_value = 0, low_stock_count = 0, out_of_stock_count = 0, csrf } = props;
   const itemRows = items.map((i, idx) => {
     let status = 'Aman';
@@ -1258,7 +1263,7 @@ export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: n
       </tr>
     `;
   }).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Laporan Stok - Sistem Inventory',
     user_perms: {},
     csrf_token: csrf,
@@ -1286,7 +1291,7 @@ export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: n
 }
 
 // ---------- users ----------
-export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { users, user_perms, csrf } = props;
   const rows = users.map((u, i) => {
     const edit = user_perms.users?.includes('edit')
@@ -1323,13 +1328,13 @@ export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<s
         <tbody>${raw(rows)}</tbody>
       </table>`
     : html`<div class="empty-state"><p>Belum ada user. <a href="/users/create">Tambah user pertama</a></p></div>`;
-  return renderBaseItem({ title: 'Data User - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Data User - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderUsersCreate(props: { roles?: { id: number; nama: string }[]; username?: string; role_id?: number; csrf: string }): string {
+export function renderUsersCreate(props: { roles?: { id: number; nama: string }[]; username?: string; role_id?: number; csrf: string } & PageProps): string {
   const { roles = [], username = '', role_id } = props;
   const roleOptions = roles.map(r => `<option value="${r.id}" ${role_id == r.id ? 'selected' : ''}>${r.nama}</option>`).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah User - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -1358,10 +1363,10 @@ export function renderUsersCreate(props: { roles?: { id: number; nama: string }[
   });
 }
 
-export function renderUsersEdit(props: { user: UserRow; roles: { id: number; nama: string }[]; csrf: string }): string {
+export function renderUsersEdit(props: { user: UserRow; roles: { id: number; nama: string }[]; csrf: string } & PageProps): string {
   const { user, roles, csrf } = props;
   const roleOptions = roles.map(r => `<option value="${r.id}" ${user.role_id == r.id ? 'selected' : ''}>${r.nama}</option>`).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit User - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -1390,9 +1395,9 @@ export function renderUsersEdit(props: { user: UserRow; roles: { id: number; nam
   });
 }
 
-export function renderUsersView(props: { user: UserRow; csrf: string }): string {
+export function renderUsersView(props: { user: UserRow; csrf: string } & PageProps): string {
   const { user, csrf } = props;
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Detail User - CRUD Item',
     user_perms: {},
     csrf_token: csrf,
@@ -1417,7 +1422,7 @@ export function renderUsersView(props: { user: UserRow; csrf: string }): string 
 // ---------- roles ----------
 type RoleForm = { id?: number; nama: string; deskripsi?: string; user_count?: number; created_at?: string };
 
-export function renderRolesIndex(props: { roles: RoleRow[]; user_perms: Record<string, string[]>; csrf: string }): string {
+export function renderRolesIndex(props: { roles: RoleRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
   const { roles, user_perms, csrf } = props;
   const rows = roles.map((r, i) => {
     const edit = user_perms.roles?.includes('edit')
@@ -1454,10 +1459,10 @@ export function renderRolesIndex(props: { roles: RoleRow[]; user_perms: Record<s
         <tbody>${raw(rows)}</tbody>
       </table>`
     : html`<div class="empty-state"><p>Belum ada role. <a href="/roles/create">Tambah role pertama</a></p></div>`;
-  return renderBaseItem({ title: 'Data Role - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
+  return renderBaseItem({ current_user: props.current_user,  title: 'Data Role - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderRolesCreate(props: { menus?: string[]; actions?: string[]; nama?: string; deskripsi?: string; permissions?: Record<string, string[]>; csrf: string }): string {
+export function renderRolesCreate(props: { menus?: string[]; actions?: string[]; nama?: string; deskripsi?: string; permissions?: Record<string, string[]>; csrf: string } & PageProps): string {
   const { menus = ['items','kategori','pelanggan','users','roles','supplier','pembelian','penjualan','stok','laporan'], actions = ['view','create','edit','delete'], nama = '', deskripsi = '', permissions = {} } = props;
   const menuRows = menus.map(menu => {
     const checked = permissions[menu] ?? [];
@@ -1467,7 +1472,7 @@ export function renderRolesCreate(props: { menus?: string[]; actions?: string[];
     }).join('');
     return html`<tr><td><strong>${MENU_LABELS[menu] || menu}</strong></td>${raw(cells)}</tr>`;
   }).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Role - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -1502,7 +1507,7 @@ export function renderRolesCreate(props: { menus?: string[]; actions?: string[];
   });
 }
 
-export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actions?: string[]; permissions?: Record<string, string[]>; current_perms?: Record<string, string[]>; csrf: string }): string {
+export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actions?: string[]; permissions?: Record<string, string[]>; current_perms?: Record<string, string[]>; csrf: string } & PageProps): string {
   const { role, menus = ['items','kategori','pelanggan','users','roles','supplier','pembelian','penjualan','stok','laporan'], actions = ['view','create','edit','delete'], permissions = {}, current_perms = {} } = props;
   const menuRows = menus.map(menu => {
     const checked = permissions[menu] ?? current_perms[menu] ?? [];
@@ -1512,7 +1517,7 @@ export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actio
     }).join('');
     return html`<tr><td><strong>${MENU_LABELS[menu] || menu}</strong></td>${raw(cells)}</tr>`;
   }).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Role - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -1547,13 +1552,13 @@ export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actio
   });
 }
 
-export function renderRolesView(props: { role: RoleForm; permissions?: Record<string, string[]>; user_count?: number; csrf: string; actions?: string[] }): string {
+export function renderRolesView(props: { role: RoleForm; permissions?: Record<string, string[]>; user_count?: number; csrf: string; actions?: string[] } & PageProps): string {
   const { role, permissions = {}, user_count = 0, csrf, actions = ['view','create','edit','delete'] } = props;
   const permRows = ['items','kategori','pelanggan','users','roles'].map(menu => {
     const cell = actions.map(a => html`<td>${permissions[menu]?.includes(a) ? '✅' : '—'}</td>`).join('');
     return html`<tr><td><strong>${menu}</strong></td>${raw(cell)}</tr>`;
   }).join('');
-  return renderBaseItem({
+  return renderBaseItem({ current_user: props.current_user, 
     title: 'Detail Role - CRUD Item',
     user_perms: {},
     csrf_token: csrf,

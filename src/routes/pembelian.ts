@@ -15,7 +15,7 @@ import {
   renderPembelianCreate,
   renderPembelianView,
 } from '../render';
-import { loginRequired, hasPermission, csrfProtect, flash } from '../auth';
+import {loginRequired, hasPermission, csrfProtect, flash, currentUser } from '../auth';
 
 function toRows(results: unknown[]): PembelianRow[] {
   return results as PembelianRow[];
@@ -38,7 +38,7 @@ export function register(app: AppHono) {
         ORDER BY p.created_at DESC
       `).all<PembelianRow>();
       const perms = await getUserPermissions(db, c.get('userId') ?? 0);
-      return c.html(renderPembelianIndex({ pembelian: toRows(rows.results), user_perms: perms || {}, csrf }));
+      return c.html(renderPembelianIndex({current_user: currentUser(c),  pembelian: toRows(rows.results), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -47,7 +47,7 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const items = await db.prepare('SELECT id, nama, harga_pokok FROM items ORDER BY nama').all();
-    return c.html(renderPembelianCreate({
+    return c.html(renderPembelianCreate({current_user: currentUser(c), 
       items: items.results as { id: number; nama: string; harga_pokok: number }[],
       csrf,
     }));
@@ -121,7 +121,7 @@ export function register(app: AppHono) {
       JOIN items i ON pd.item_id = i.id
       WHERE pd.pembelian_id = ?
     `).bind(id).all<PembelianDetailRow>();
-    return c.html(renderPembelianView({ pembelian: pembelian as PembelianRow, detail: detail.results as PembelianDetailRow[], csrf }));
+    return c.html(renderPembelianView({current_user: currentUser(c),  pembelian: pembelian as PembelianRow, detail: detail.results as PembelianDetailRow[], csrf }));
   });
 
   app.post('/pembelian/:id/delete', loginRequired(), hasPermission('pembelian', 'delete'), csrfProtect(), async (c) => {

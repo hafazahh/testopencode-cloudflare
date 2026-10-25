@@ -15,7 +15,7 @@ import {
   renderKategoriEdit,
   renderKategoriView,
 } from '../render';
-import { loginRequired, hasPermission, csrfProtect, flash } from '../auth';
+import {loginRequired, hasPermission, csrfProtect, flash, currentUser } from '../auth';
 
 function toRows(results: unknown[]): KategoriRow[] {
   return results as KategoriRow[];
@@ -32,7 +32,7 @@ export function register(app: AppHono) {
       const csrf = session?.csrf_token ?? '';
       const rows = await listKategori(db);
       const perms = await getUserPermissions(db, c.get('userId') ?? 0);
-      return c.html(renderKategoriIndex({ kategori: toRows(rows), user_perms: perms || {}, csrf }));
+      return c.html(renderKategoriIndex({current_user: currentUser(c),  kategori: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -47,13 +47,13 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const itemCount = await db.prepare('SELECT COUNT(*) AS n FROM items WHERE category = ?').bind(kategori.nama).first<{ n: number }>();
-    return c.html(renderKategoriView({ kategori: kategori as KategoriRow, item_count: itemCount?.n ?? 0, csrf }));
+    return c.html(renderKategoriView({current_user: currentUser(c),  kategori: kategori as KategoriRow, item_count: itemCount?.n ?? 0, csrf }));
   });
 
   app.get('/kategori/create', loginRequired(), hasPermission('kategori', 'create'), async (c) => {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderKategoriCreate({ csrf }));
+    return c.html(renderKategoriCreate({current_user: currentUser(c),  csrf }));
   });
 
   app.post('/kategori/create', loginRequired(), hasPermission('kategori', 'create'), csrfProtect(), async (c) => {
@@ -92,7 +92,7 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderKategoriEdit({ kategori: kategori as KategoriRow, csrf }));
+    return c.html(renderKategoriEdit({current_user: currentUser(c),  kategori: kategori as KategoriRow, csrf }));
   });
 
   app.post('/kategori/:id/edit', loginRequired(), hasPermission('kategori', 'edit'), csrfProtect(), async (c) => {

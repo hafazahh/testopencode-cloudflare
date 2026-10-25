@@ -15,7 +15,7 @@ import {
   renderPenjualanCreate,
   renderPenjualanView,
 } from '../render';
-import { loginRequired, hasPermission, csrfProtect, flash } from '../auth';
+import {loginRequired, hasPermission, csrfProtect, flash, currentUser } from '../auth';
 
 function toRows(results: unknown[]): PenjualanRow[] {
   return results as PenjualanRow[];
@@ -38,7 +38,7 @@ export function register(app: AppHono) {
         ORDER BY p.created_at DESC
       `).all<PenjualanRow>();
       const perms = await getUserPermissions(db, c.get('userId') ?? 0);
-      return c.html(renderPenjualanIndex({ penjualan: toRows(rows.results), user_perms: perms || {}, csrf }));
+      return c.html(renderPenjualanIndex({current_user: currentUser(c),  penjualan: toRows(rows.results), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -53,7 +53,7 @@ export function register(app: AppHono) {
       LEFT JOIN stok_akhir sa ON i.id = sa.item_id
       ORDER BY i.nama
     `).all();
-    return c.html(renderPenjualanCreate({
+    return c.html(renderPenjualanCreate({current_user: currentUser(c), 
       pelanggans: pelanggans.map((p) => ({ id: p.id, nama: p.nama })),
       items: items.results as { id: number; nama: string; stok_akhir: number; harga_pokok: number }[],
       csrf,
@@ -130,7 +130,7 @@ export function register(app: AppHono) {
       JOIN items i ON pd.item_id = i.id
       WHERE pd.penjualan_id = ?
     `).bind(id).all<PenjualanDetailRow>();
-    return c.html(renderPenjualanView({ penjualan: penjualan as PenjualanRow, detail: detail.results as PenjualanDetailRow[], csrf }));
+    return c.html(renderPenjualanView({current_user: currentUser(c),  penjualan: penjualan as PenjualanRow, detail: detail.results as PenjualanDetailRow[], csrf }));
   });
 
   app.post('/penjualan/:id/delete', loginRequired(), hasPermission('penjualan', 'delete'), csrfProtect(), async (c) => {

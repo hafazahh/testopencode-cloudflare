@@ -1,5 +1,5 @@
 import { Context, Hono } from 'hono';
-import type { Env, SessionRow } from './db';
+import type { Env, SessionRow, UserRow } from './db';
 
 /** Shared app context (shared type file — avoids duplicate Context generics
  *  across src/routes/*.ts and src/index.ts). */
@@ -13,6 +13,7 @@ export const LOGIN_LOCKOUT_SECONDS = 900; // 15 menit
 export type AppState = {
   session: SessionRow | null;
   userId: number | null;
+  user: UserRow | null;
   flash: { category: string; message: string }[];
 };
 

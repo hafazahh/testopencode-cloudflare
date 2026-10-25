@@ -15,7 +15,7 @@ import {
   renderPelangganEdit,
   renderPelangganView,
 } from '../render';
-import { loginRequired, hasPermission, csrfProtect, flash } from '../auth';
+import {loginRequired, hasPermission, csrfProtect, flash, currentUser } from '../auth';
 
 function toRows(results: unknown[]): PelangganRow[] {
   return results as PelangganRow[];
@@ -32,7 +32,7 @@ export function register(app: AppHono) {
       const csrf = session?.csrf_token ?? '';
       const rows = await listPelanggan(db);
       const perms = await c?.env?.DB ? db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first() : {};
-      return c.html(renderPelangganIndex({ pelanggan: toRows(rows), user_perms: perms || {}, csrf }));
+      return c.html(renderPelangganIndex({current_user: currentUser(c),  pelanggan: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -46,13 +46,13 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderPelangganView({ pelanggan: pelanggan as PelangganRow, csrf }));
+    return c.html(renderPelangganView({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, csrf }));
   });
 
   app.get('/pelanggan/create', loginRequired(), hasPermission('pelanggan', 'create'), async (c) => {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderPelangganCreate({ csrf }));
+    return c.html(renderPelangganCreate({current_user: currentUser(c),  csrf }));
   });
 
   app.post('/pelanggan/create', loginRequired(), hasPermission('pelanggan', 'create'), csrfProtect(), async (c) => {
@@ -89,7 +89,7 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderPelangganEdit({ pelanggan: pelanggan as PelangganRow, csrf }));
+    return c.html(renderPelangganEdit({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, csrf }));
   });
 
   app.post('/pelanggan/:id/edit', loginRequired(), hasPermission('pelanggan', 'edit'), csrfProtect(), async (c) => {

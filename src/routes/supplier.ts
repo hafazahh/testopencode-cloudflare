@@ -16,7 +16,7 @@ import {
   renderSupplierEdit,
   renderSupplierView,
 } from '../render';
-import { loginRequired, hasPermission, csrfProtect, flash } from '../auth';
+import {loginRequired, hasPermission, csrfProtect, flash, currentUser } from '../auth';
 
 function toRows(results: unknown[]): SupplierRow[] {
   return results as SupplierRow[];
@@ -33,7 +33,7 @@ export function register(app: AppHono) {
       const csrf = session?.csrf_token ?? '';
       const rows = await listSupplier(db);
       const perms = await getUserPermissions(db, c.get('userId') ?? 0);
-      return c.html(renderSupplierIndex({ suppliers: toRows(rows), user_perms: perms || {}, csrf }));
+      return c.html(renderSupplierIndex({current_user: currentUser(c),  suppliers: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -47,13 +47,13 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderSupplierView({ supplier: supplier as SupplierRow, csrf }));
+    return c.html(renderSupplierView({current_user: currentUser(c),  supplier: supplier as SupplierRow, csrf }));
   });
 
   app.get('/supplier/create', loginRequired(), hasPermission('supplier', 'create'), async (c) => {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderSupplierCreate({ csrf }));
+    return c.html(renderSupplierCreate({current_user: currentUser(c),  csrf }));
   });
 
   app.post('/supplier/create', loginRequired(), hasPermission('supplier', 'create'), csrfProtect(), async (c) => {
@@ -89,7 +89,7 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderSupplierEdit({ supplier: supplier as SupplierRow, csrf }));
+    return c.html(renderSupplierEdit({current_user: currentUser(c),  supplier: supplier as SupplierRow, csrf }));
   });
 
   app.post('/supplier/:id/edit', loginRequired(), hasPermission('supplier', 'edit'), csrfProtect(), async (c) => {

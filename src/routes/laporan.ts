@@ -10,7 +10,7 @@ import {
   renderLaporanPenjualan,
   renderLaporanStok,
 } from '../render';
-import { loginRequired, hasPermission, flash } from '../auth';
+import {loginRequired, hasPermission, flash, currentUser } from '../auth';
 
 export function register(app: AppHono) {
   // ---------- laporan penjualan ----------
@@ -52,7 +52,7 @@ export function register(app: AppHono) {
       const total_penjualan = details.reduce((s, d) => s + d.subtotal, 0);
       const total_margin = details.reduce((s, d) => s + (d.subtotal - d.harga_pokok * d.qty), 0);
 
-      return c.html(renderLaporanPenjualan({
+      return c.html(renderLaporanPenjualan({current_user: currentUser(c), 
         details,
         start_date,
         end_date,
@@ -87,7 +87,7 @@ export function register(app: AppHono) {
       const low_stock_count = items.filter((i) => i.qty_akhir > 0 && i.qty_akhir < 10).length;
       const out_of_stock_count = items.filter((i) => i.qty_akhir === 0).length;
 
-      return c.html(renderLaporanStok({
+      return c.html(renderLaporanStok({current_user: currentUser(c), 
         items,
         total_items,
         total_value,

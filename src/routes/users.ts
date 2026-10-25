@@ -16,7 +16,7 @@ import {
   renderUsersEdit,
   renderUsersView,
 } from '../render';
-import { loginRequired, hasPermission, csrfProtect, flash } from '../auth';
+import {loginRequired, hasPermission, csrfProtect, flash, currentUser } from '../auth';
 import { hashPassword } from '../auth';
 
 function toRows(results: unknown[]): UserRow[] {
@@ -35,7 +35,7 @@ export function register(app: AppHono) {
       const rows = (await db.prepare('SELECT u.*, r.nama as role_nama FROM users u JOIN roles r ON u.role_id = r.id ORDER BY u.id DESC').all<UserRow>()).results;
       const permsRow = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first();
       const perms = permsRow ? (JSON.parse(String(permsRow.permissions ?? '')) as Record<string, string[]>) : {};
-      return c.html(renderUsersIndex({ users: toRows(rows), user_perms: perms || {}, csrf }));
+      return c.html(renderUsersIndex({current_user: currentUser(c),  users: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -57,7 +57,7 @@ export function register(app: AppHono) {
       created_at: user.created_at,
       role_nama: role?.role_nama ?? '',
     } as UserRow;
-    return c.html(renderUsersView({ user: userView, csrf }));
+    return c.html(renderUsersView({current_user: currentUser(c),  user: userView, csrf }));
   });
 
   app.get('/users/create', loginRequired(), hasPermission('users', 'create'), async (c) => {
@@ -65,7 +65,7 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const roles = await listRoles(db);
-    return c.html(renderUsersCreate({ roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
+    return c.html(renderUsersCreate({current_user: currentUser(c),  roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
   });
 
   app.post('/users/create', loginRequired(), hasPermission('users', 'create'), csrfProtect(), async (c) => {
@@ -121,7 +121,7 @@ export function register(app: AppHono) {
       created_at: user.created_at,
       role_nama: '',
     };
-    return c.html(renderUsersEdit({ user: userView, roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
+    return c.html(renderUsersEdit({current_user: currentUser(c),  user: userView, roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
   });
 
   app.post('/users/:id/edit', loginRequired(), hasPermission('users', 'edit'), csrfProtect(), async (c) => {

@@ -16,7 +16,7 @@ import {
   renderCreateItem,
   renderEditItem,
 } from '../render';
-import { loginRequired, hasPermission, csrfProtect, flash } from '../auth';
+import {loginRequired, hasPermission, csrfProtect, flash, currentUser } from '../auth';
 
 function itemRows(results: unknown[]): ItemRow[] {
   return results as ItemRow[];
@@ -34,7 +34,7 @@ export function register(app: AppHono) {
       const csrf = session?.csrf_token ?? '';
       const rows = await db.prepare('SELECT * FROM items ORDER BY id DESC').all<ItemRow>();
       const perms = await getUserPermissions(db, c.get('userId') ?? 0);
-      return c.html(renderIndex({ items: itemRows(rows.results), user_perms: perms || {}, csrf }));
+      return c.html(renderIndex({current_user: currentUser(c),  items: itemRows(rows.results), user_perms: perms || {}, csrf }));
     },
   );
 
@@ -52,7 +52,7 @@ export function register(app: AppHono) {
       }
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
-      return c.html(renderViewItem({ item: item as ItemRow, csrf }));
+      return c.html(renderViewItem({current_user: currentUser(c),  item: item as ItemRow, csrf }));
     },
   );
 
@@ -65,7 +65,7 @@ export function register(app: AppHono) {
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
       const rows = await listKategori(db);
-      return c.html(renderCreateItem({
+      return c.html(renderCreateItem({current_user: currentUser(c), 
         categories: rows.map((r) => ({ nama: r.nama })),
         csrf,
       }));
@@ -125,7 +125,7 @@ export function register(app: AppHono) {
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
       const rows = await listKategori(db);
-      return c.html(renderEditItem({ item: item as ItemRow, categories: rows.map((r) => ({ nama: r.nama })), csrf }));
+      return c.html(renderEditItem({current_user: currentUser(c),  item: item as ItemRow, categories: rows.map((r) => ({ nama: r.nama })), csrf }));
     },
   );
 

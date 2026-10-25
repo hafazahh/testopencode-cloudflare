@@ -126,7 +126,12 @@ export async function getSessionUser(db: D1Database, sessionId: string): Promise
   }
   let user: UserRow | null = null;
   if (session.user_id) {
-    user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first<UserRow>();
+    user = await db
+      .prepare(
+        'SELECT u.*, r.nama AS role_nama FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?'
+      )
+      .bind(session.user_id)
+      .first<UserRow>();
   }
   return { session, user: user || null };
 }
@@ -157,8 +162,17 @@ export function sessionMiddleware(): MiddlewareHandler<AppEnv> {
     const { session, user } = await getSessionUser(c.env.DB, sessionId);
     c.set('session', session);
     c.set('userId', user?.id ?? null);
+    c.set('user', user);
     await next();
   };
+}
+
+/** Info pengguna untuk layout (nama + peran) dan tombol Logout. */
+export function currentUser(
+  c: AppContext
+): { username: string; role_nama?: string } | undefined {
+  const u = c.get('user');
+  return u ? { username: u.username, role_nama: u.role_nama } : undefined;
 }
 
 export function flashMiddleware(): MiddlewareHandler<AppEnv> {
