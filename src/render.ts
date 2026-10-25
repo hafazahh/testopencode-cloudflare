@@ -140,8 +140,8 @@ export function renderBase(props: LayoutProps): string {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${props.title}</title>
-        <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-        <link rel="stylesheet" href="/static/style.css">
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+        <link rel="stylesheet" href="/style.css">
     </head>
     <body>
         <div class="container">
@@ -168,7 +168,7 @@ export function renderBase(props: LayoutProps): string {
                 <p>CRUD Item &copy; 2024 - Cloudflare Workers + D1</p>
             </footer>
         </div>
-        <script src="/static/confirm.js"></script>
+        <script src="/confirm.js"></script>
         ${raw(props.contentScripts ?? '')}
     </body>
     </html>
@@ -227,11 +227,11 @@ export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string
         <td><span class="category-badge">${item.category}</span></td>
         <td class="numeric">${formatRupiah(item.harga_pokok)}</td>
         <td class="numeric">${formatRupiah(item.harga_jual)}</td>
-        <td class="numeric ${marginCls}">${formatRupiah(item.margin)}${item.margin > 0 ? html`<span class="margin-badge">+${marginPct}%</span>` : ''}</td>
+        <td class="numeric ${marginCls}">${formatRupiah(item.margin)}${raw(item.margin > 0 ? html`<span class="margin-badge">+${marginPct}%</span>` : '')}</td>
         <td class="actions">
           <a href="/item/${item.id}" class="btn btn-sm btn-view">Lihat</a>
-          ${edit}
-          ${del}
+          ${raw(edit)}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -240,7 +240,7 @@ export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string
   const add = user_perms.items?.includes('create')
     ? html`<a href="/item/create" class="btn btn-primary">+ Tambah Item</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Daftar Item</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Daftar Item</h2>${raw(add)}</div>`;
 
   const table = items.length
     ? html`
@@ -252,7 +252,7 @@ export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string
               <th scope="col">Margin</th><th scope="col">Aksi</th>
             </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>${raw(rows)}</tbody>
         </table>`
     : html`<div class="empty-state"><p>Belum ada item. <a href="/item/create">Tambah item pertama</a></p></div>`;
 
@@ -275,7 +275,7 @@ export function renderViewItem(props: { item: ItemRow; csrf: string }): string {
         <div class="detail-row"><span class="detail-label">Kategori</span><span class="detail-value"><span class="category-badge">${item.category}</span></span></div>
         <div class="detail-row"><span class="detail-label">Harga Pokok</span><span class="detail-value">${formatRupiah(item.harga_pokok)}</span></div>
         <div class="detail-row"><span class="detail-label">Harga Jual</span><span class="detail-value">${formatRupiah(item.harga_jual)}</span></div>
-        <div class="detail-row"><span class="detail-label">Margin</span><span class="detail-value ${marginCls}">${formatRupiah(item.margin)}${item.harga_pokok > 0 ? html` <span class="margin-badge">(${marginPct}%)</span>` : ''}</span></div>
+        <div class="detail-row"><span class="detail-label">Margin</span><span class="detail-value ${marginCls}">${formatRupiah(item.margin)}${raw(item.harga_pokok > 0 ? html` <span class="margin-badge">(${marginPct}%)</span>` : '')}</span></div>
         <div class="detail-row"><span class="detail-label">Dibuat</span><span class="detail-value">${item.created_at ?? ''}</span></div>
         <div class="detail-row"><span class="detail-label">Diupdate</span><span class="detail-value">${item.updated_at ?? ''}</span></div>
       </div>
@@ -307,7 +307,7 @@ export function renderCreateItem(props: { nama?: string; harga_pokok?: number; h
         <div class="form-group">
           <label for="category">Kategori</label>
           <select id="category" name="category" required>
-            <option value="">-- Pilih Kategori --</option>${catOptions}
+            <option value="">-- Pilih Kategori --</option>${raw(catOptions)}
           </select>
         </div>
         <div class="form-group">
@@ -324,7 +324,7 @@ export function renderCreateItem(props: { nama?: string; harga_pokok?: number; h
           <a href="/" class="btn btn-secondary">Batal</a>
         </div>
       </form>
-      <script src="/static/margin.js"></script>
+      <script src="/margin.js"></script>
     `
   });
 }
@@ -349,7 +349,7 @@ export function renderEditItem(props: { item: ItemRow; categories: { nama: strin
         <div class="form-group">
           <label for="category">Kategori</label>
           <select id="category" name="category" required>
-            <option value="">-- Pilih Kategori --</option>${catOptions}
+            <option value="">-- Pilih Kategori --</option>${raw(catOptions)}
           </select>
         </div>
         <div class="form-group">
@@ -366,7 +366,7 @@ export function renderEditItem(props: { item: ItemRow; categories: { nama: strin
           <a href="/" class="btn btn-secondary">Batal</a>
         </div>
       </form>
-      <script src="/static/margin.js"></script>
+      <script src="/margin.js"></script>
     `
   });
 }
@@ -431,8 +431,8 @@ export function renderLogin(props: { csrf: string; non_admin_users?: { username:
           <h3>Informasi Login</h3>
           <p>User yang terdaftar (selain admin):</p>
           ${non_admin_users.length
-              ? html`<table class="data-table"><thead><tr><th scope="col">Username</th><th scope="col">Role</th></tr></thead><tbody>${usersRows}</tbody></table>`
-              : html`<p>Belum ada user non-admin. Buat user baru melalui akun admin.</p>`}
+              ? raw(html`<table class="data-table"><thead><tr><th scope="col">Username</th><th scope="col">Role</th></tr></thead><tbody>${raw(usersRows)}</tbody></table>`)
+              : raw(html`<p>Belum ada user non-admin. Buat user baru melalui akun admin.</p>`)}
           <p class="login-info-note">Ganti password default setelah login pertama untuk keamanan.</p>
         </div>
       </div>
@@ -464,8 +464,8 @@ export function renderKategoriIndex(props: { kategori: KategoriRow[]; user_perms
         <td>${k.item_count ?? 0}</td>
         <td class="actions">
           <a href="/kategori/${k.id}" class="btn btn-sm btn-view">Lihat</a>
-          ${edit}
-          ${del}
+          ${raw(edit)}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -473,7 +473,7 @@ export function renderKategoriIndex(props: { kategori: KategoriRow[]; user_perms
   const add = user_perms.kategori?.includes('create')
     ? html`<a href="/kategori/create" class="btn btn-primary">+ Tambah Kategori</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Daftar Kategori</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Daftar Kategori</h2>${raw(add)}</div>`;
   const table = kategori.length
     ? html`<table class="data-table">
         <thead>
@@ -482,7 +482,7 @@ export function renderKategoriIndex(props: { kategori: KategoriRow[]; user_perms
             <th scope="col">Jumlah Item</th><th scope="col">Aksi</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/kategori/create', 'Tambah kategori pertama');
   return renderBaseItem({ title: 'Daftar Kategori - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
@@ -582,8 +582,8 @@ export function renderPelangganIndex(props: { pelanggan: PelangganRow[]; user_pe
         <td>${p.telepon || '-'}</td>
         <td class="actions">
           <a href="/pelanggan/${p.id}" class="btn btn-sm btn-view">Lihat</a>
-          ${edit}
-          ${del}
+          ${raw(edit)}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -591,7 +591,7 @@ export function renderPelangganIndex(props: { pelanggan: PelangganRow[]; user_pe
   const add = user_perms.pelanggan?.includes('create')
     ? html`<a href="/pelanggan/create" class="btn btn-primary">+ Tambah Pelanggan</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Daftar Pelanggan</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Daftar Pelanggan</h2>${raw(add)}</div>`;
   const table = pelanggan.length
     ? html`<table class="data-table">
         <thead>
@@ -599,7 +599,7 @@ export function renderPelangganIndex(props: { pelanggan: PelangganRow[]; user_pe
             <th scope="col">No</th><th>Nama</th><th>Email</th><th>Telepon</th><th scope="col">Aksi</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/pelanggan/create', 'Tambah pelanggan pertama');
   return renderBaseItem({ title: 'Daftar Pelanggan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
@@ -715,8 +715,8 @@ export function renderSupplierIndex(props: { suppliers: SupplierRow[]; user_perm
         <td>${s.kontak || '-'}</td>
         <td class="actions">
           <a href="/supplier/${s.id}" class="btn btn-sm btn-view">Lihat</a>
-          ${edit}
-          ${del}
+          ${raw(edit)}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -724,7 +724,7 @@ export function renderSupplierIndex(props: { suppliers: SupplierRow[]; user_perm
   const add = user_perms.supplier?.includes('create')
     ? html`<a href="/supplier/create" class="btn btn-primary">+ Tambah Supplier</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Daftar Supplier</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Daftar Supplier</h2>${raw(add)}</div>`;
   const table = suppliers.length
     ? html`<table class="data-table">
         <thead>
@@ -732,7 +732,7 @@ export function renderSupplierIndex(props: { suppliers: SupplierRow[]; user_perm
             <th scope="col">No</th><th>Nama</th><th>Kontak</th><th scope="col">Aksi</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/supplier/create', 'Tambah supplier pertama');
   return renderBaseItem({ title: 'Daftar Supplier - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
@@ -838,7 +838,7 @@ export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_pe
         <td class="numeric">Rp ${p.total.toLocaleString('id-ID')}</td>
         <td class="actions">
           <a href="/pembelian/${p.id}" class="btn btn-sm btn-view">Lihat</a>
-          ${del}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -846,7 +846,7 @@ export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_pe
   const add = user_perms.pembelian?.includes('create')
     ? html`<a href="/pembelian/create" class="btn btn-primary">+ Tambah Pembelian</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Daftar Pembelian</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Daftar Pembelian</h2>${raw(add)}</div>`;
   const table = pembelian.length
     ? html`<table class="data-table">
         <thead>
@@ -855,7 +855,7 @@ export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_pe
             <th scope="col">Total</th><th scope="col">Aksi</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/pembelian/create', 'Tambah pembelian pertama');
   return renderBaseItem({ title: 'Daftar Pembelian - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
@@ -914,7 +914,7 @@ export function renderPembelianCreate(props: { items?: { id: number; nama: strin
         </div>
       </form>
       <script type="application/json" id="items-data">[${itemsJson}]</script>
-      <script src="/static/pembelian.js"></script>
+      <script src="/pembelian.js"></script>
     `
   });
 }
@@ -952,7 +952,7 @@ export function renderPembelianView(props: { pembelian: PembelianForm; detail: P
             <th scope="col">Harga Beli</th><th scope="col">Subtotal</th>
           </tr>
         </thead>
-        <tbody>${detailRows}</tbody>
+        <tbody>${raw(detailRows)}</tbody>
         <tfoot>
           <tr>
             <td colspan="4" style="text-align: right;"><strong>Total:</strong></td>
@@ -986,7 +986,7 @@ export function renderPenjualanIndex(props: { penjualan: PenjualanRow[]; user_pe
         <td class="numeric">Rp ${p.total.toLocaleString('id-ID')}</td>
         <td class="actions">
           <a href="/penjualan/${p.id}" class="btn btn-sm btn-view">Lihat</a>
-          ${del}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -994,7 +994,7 @@ export function renderPenjualanIndex(props: { penjualan: PenjualanRow[]; user_pe
   const add = user_perms.penjualan?.includes('create')
     ? html`<a href="/penjualan/create" class="btn btn-primary">+ Tambah Penjualan</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Daftar Penjualan</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Daftar Penjualan</h2>${raw(add)}</div>`;
   const table = penjualan.length
     ? html`<table class="data-table">
         <thead>
@@ -1003,7 +1003,7 @@ export function renderPenjualanIndex(props: { penjualan: PenjualanRow[]; user_pe
             <th scope="col">Total</th><th scope="col">Aksi</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${raw(rows)}</tbody>
       </table>`
     : emptyStateLink('/penjualan/create', 'Tambah penjualan pertama');
   return renderBaseItem({ title: 'Daftar Penjualan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
@@ -1024,7 +1024,7 @@ export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: 
           <div class="form-group">
             <label for="pelanggan_id">Pelanggan</label>
             <select id="pelanggan_id" name="pelanggan_id" required>
-              <option value="">-- Pilih Pelanggan --</option>${pelangganOptions}
+              <option value="">-- Pilih Pelanggan --</option>${raw(pelangganOptions)}
             </select>
           </div>
           <div class="form-group">
@@ -1065,7 +1065,7 @@ export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: 
         </div>
       </form>
       <script type="application/json" id="items-data">[${itemsJson}]</script>
-      <script src="/static/penjualan.js"></script>
+      <script src="/penjualan.js"></script>
     `
   });
 }
@@ -1104,7 +1104,7 @@ export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: P
             <th scope="col">Harga Jual</th><th scope="col">HPP</th><th scope="col">Subtotal</th>
           </tr>
         </thead>
-        <tbody>${detailRows}</tbody>
+        <tbody>${raw(detailRows)}</tbody>
         <tfoot>
           <tr>
             <td colspan="5" style="text-align: right;"><strong>Total:</strong></td>
@@ -1129,7 +1129,7 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
     <tr>
       <td>${m.tanggal}</td>
       <td>${m.nomor_referensi}</td>
-      <td>${m.jenis_mutasi === 'IN' ? html`<span class="badge badge-success">Masuk</span>` : html`<span class="badge badge-danger">Keluar</span>`}</td>
+      <td>${raw(m.jenis_mutasi === 'IN' ? html`<span class="badge badge-success">Masuk</span>` : html`<span class="badge badge-danger">Keluar</span>`)}</td>
       <td class="numeric">${m.qty}</td>
       <td class="numeric">Rp ${m.harga.toLocaleString('id-ID')}</td>
       <td class="numeric">${m.saldo_berjalan}</td>
@@ -1146,32 +1146,32 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
           <div class="form-group" style="margin-bottom:0;">
             <label for="item_id" style="display:inline; margin-right:8px;">Pilih Item</label>
             <select name="item_id" id="item_id" style="width:auto; display:inline-block;">
-              ${items.map(i => html`<option value="${i.id}" ${selected_item && i.id == selected_item.id ? 'selected' : ''}>${i.nama}</option>`)}
+              ${raw(items.map(i => html`<option value="${i.id}" ${selected_item && i.id == selected_item.id ? 'selected' : ''}>${i.nama}</option>`).join(''))}
             </select>
             <button type="submit" class="btn btn-primary btn-sm" style="margin-left:8px;">Tampilkan</button>
           </div>
         </form>
       </div>
       ${selected_item
-        ? html`
+        ? raw(html`
       <div class="detail-card">
         <div class="detail-row"><span class="detail-label">Item</span><span class="detail-value">${selected_item.nama}</span></div>
         <div class="detail-row"><span class="detail-label">Stok Akhir</span><span class="detail-value">${selected_item.stok_akhir ?? 0}</span></div>
         <div class="detail-row"><span class="detail-label">HPP Rata-rata</span><span class="detail-value">Rp ${formatRupiah(selected_item.harga_pokok)}</span></div>
-      </div>`
-        : html`<div class="empty-state"><p>Belum ada item. Tambahkan item terlebih dahulu.</p></div>`}
+      </div>`)
+        : raw(html`<div class="empty-state"><p>Belum ada item. Tambahkan item terlebih dahulu.</p></div>`)}
       ${mutasi.length
-        ? html`<table class="data-table">
+        ? raw(html`<table class="data-table">
             <thead>
               <tr>
                 <th scope="col">Tanggal</th><th scope="col">No. Referensi</th><th scope="col">Jenis</th>
                 <th scope="col">Qty</th><th scope="col">Harga</th><th scope="col">Saldo Berjalan</th>
               </tr>
             </thead>
-            <tbody>${mutasiRows}</tbody>
-          </table>`
-        : html`<div class="empty-state"><p>Belum ada mutasi stok untuk item ini.</p></div>`}
-      <script src="/static/kartu-stok.js"></script>
+            <tbody>${raw(mutasiRows)}</tbody>
+          </table>`)
+        : raw(html`<div class="empty-state"><p>Belum ada mutasi stok untuk item ini.</p></div>`)}
+      <script src="/kartu-stok.js"></script>
     `
   });
 }
@@ -1223,16 +1223,16 @@ export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; st
         <div class="summary-card"><div class="summary-label">Total Margin</div><div class="summary-value">Rp ${total_margin.toLocaleString('id-ID')}</div></div>
       </div>
       ${details.length
-        ? html`<table class="data-table">
+        ? raw(html`<table class="data-table">
             <thead>
               <tr>
                 <th scope="col">No. Transaksi</th><th scope="col">Tanggal</th><th scope="col">Pelanggan</th><th scope="col">Item</th>
                 <th scope="col">Qty</th><th scope="col">Harga Jual</th><th scope="col">HPP</th><th scope="col">Subtotal</th><th scope="col">Margin</th>
               </tr>
             </thead>
-            <tbody>${detailRows}</tbody>
-          </table>`
-        : html`<div class="empty-state"><p>Belum ada data penjualan.</p></div>`}
+            <tbody>${raw(detailRows)}</tbody>
+          </table>`)
+        : raw(html`<div class="empty-state"><p>Belum ada data penjualan.</p></div>`)}
     `
   });
 }
@@ -1269,16 +1269,16 @@ export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: n
         <div class="summary-card"><div class="summary-label">Stok Habis</div><div class="summary-value">${out_of_stock_count}</div></div>
       </div>
       ${items.length
-        ? html`<table class="data-table">
+        ? raw(html`<table class="data-table">
             <thead>
               <tr>
                 <th scope="col">Item</th><th scope="col">Kategori</th><th scope="col">Stok</th>
                 <th scope="col">HPP Rata-rata</th><th scope="col">Nilai Stok</th><th scope="col">Status</th>
               </tr>
             </thead>
-            <tbody>${itemRows}</tbody>
-          </table>`
-        : html`<div class="empty-state"><p>Belum ada data stok.</p></div>`}
+            <tbody>${raw(itemRows)}</tbody>
+          </table>`)
+        : raw(html`<div class="empty-state"><p>Belum ada data stok.</p></div>`)}
     `
   });
 }
@@ -1301,8 +1301,8 @@ export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<s
         <td>${u.created_at}</td>
         <td class="actions">
           <a href="/users/${u.id}" class="btn btn-small btn-view">Lihat</a>
-          ${edit}
-          ${del}
+          ${raw(edit)}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -1310,7 +1310,7 @@ export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<s
   const add = user_perms.users?.includes('create')
     ? html`<a href="/users/create" class="btn btn-primary">+ Tambah User</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Data User</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Data User</h2>${raw(add)}</div>`;
   const table = users.length
     ? html`<table class="data-table">
         <thead>
@@ -1318,7 +1318,7 @@ export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<s
             <th scope="col">ID</th><th>Username</th><th>Role</th><th>Dibuat</th><th scope="col">Aksi</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${raw(rows)}</tbody>
       </table>`
     : html`<div class="empty-state"><p>Belum ada user. <a href="/users/create">Tambah user pertama</a></p></div>`;
   return renderBaseItem({ title: 'Data User - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
@@ -1344,7 +1344,7 @@ export function renderUsersCreate(props: { roles?: { id: number; nama: string }[
         <div class="form-group">
           <label for="role_id">Role</label>
           <select id="role_id" name="role_id" required>
-            <option value="">-- Pilih Role --</option>${roleOptions}
+            <option value="">-- Pilih Role --</option>${raw(roleOptions)}
           </select>
         </div>
         <div class="form-actions">
@@ -1376,7 +1376,7 @@ export function renderUsersEdit(props: { user: UserRow; roles: { id: number; nam
         <div class="form-group">
           <label for="role_id">Role</label>
           <select id="role_id" name="role_id" required>
-            <option value="">-- Pilih Role --</option>${roleOptions}
+            <option value="">-- Pilih Role --</option>${raw(roleOptions)}
           </select>
         </div>
         <div class="form-actions">
@@ -1432,8 +1432,8 @@ export function renderRolesIndex(props: { roles: RoleRow[]; user_perms: Record<s
         <td>${r.user_count ?? 0}</td>
         <td class="actions">
           <a href="/roles/${r.id}" class="btn btn-small btn-view">Lihat</a>
-          ${edit}
-          ${del}
+          ${raw(edit)}
+          ${raw(del)}
         </td>
       </tr>
     `;
@@ -1441,7 +1441,7 @@ export function renderRolesIndex(props: { roles: RoleRow[]; user_perms: Record<s
   const add = user_perms.roles?.includes('create')
     ? html`<a href="/roles/create" class="btn btn-primary">+ Tambah Role</a>`
     : '';
-  const listHeader = html`<div class="list-header"><h2>Data Role</h2>${add}</div>`;
+  const listHeader = html`<div class="list-header"><h2>Data Role</h2>${raw(add)}</div>`;
   const table = roles.length
     ? html`<table class="data-table">
         <thead>
@@ -1449,7 +1449,7 @@ export function renderRolesIndex(props: { roles: RoleRow[]; user_perms: Record<s
             <th scope="col">ID</th><th>Nama</th><th>Deskripsi</th><th scope="col">User Count</th><th scope="col">Aksi</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${raw(rows)}</tbody>
       </table>`
     : html`<div class="empty-state"><p>Belum ada role. <a href="/roles/create">Tambah role pertama</a></p></div>`;
   return renderBaseItem({ title: 'Data Role - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
@@ -1463,7 +1463,7 @@ export function renderRolesCreate(props: { menus?: string[]; actions?: string[];
       const checkedAttr = checked.includes(a) ? 'checked' : '';
       return html`<td><input type="checkbox" name="perm_${menu}" value="${a}" ${checkedAttr}></td>`;
     }).join('');
-    return html`<tr><td><strong>${MENU_LABELS[menu] || menu}</strong></td>${cells}</tr>`;
+    return html`<tr><td><strong>${MENU_LABELS[menu] || menu}</strong></td>${raw(cells)}</tr>`;
   }).join('');
   return renderBaseItem({
     title: 'Tambah Role - CRUD Item',
@@ -1485,10 +1485,10 @@ export function renderRolesCreate(props: { menus?: string[]; actions?: string[];
             <thead>
               <tr>
                 <th scope="col">Menu</th>
-                ${actions.map(a => html`<th scope="col">${a}</th>`)}
+                ${raw(actions.map(a => html`<th scope="col">${a}</th>`).join(''))}
               </tr>
             </thead>
-            <tbody>${menuRows}</tbody>
+            <tbody>${raw(menuRows)}</tbody>
           </table>
         </div>
         <div class="form-actions">
@@ -1508,7 +1508,7 @@ export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actio
       const checkedAttr = checked.includes(a) ? 'checked' : '';
       return html`<td><input type="checkbox" name="perm_${menu}" value="${a}" ${checkedAttr}></td>`;
     }).join('');
-    return html`<tr><td><strong>${MENU_LABELS[menu] || menu}</strong></td>${cells}</tr>`;
+    return html`<tr><td><strong>${MENU_LABELS[menu] || menu}</strong></td>${raw(cells)}</tr>`;
   }).join('');
   return renderBaseItem({
     title: 'Edit Role - CRUD Item',
@@ -1530,10 +1530,10 @@ export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actio
             <thead>
               <tr>
                 <th scope="col">Menu</th>
-                ${actions.map(a => html`<th scope="col">${a}</th>`)}
+                ${raw(actions.map(a => html`<th scope="col">${a}</th>`).join(''))}
               </tr>
             </thead>
-            <tbody>${menuRows}</tbody>
+            <tbody>${raw(menuRows)}</tbody>
           </table>
         </div>
         <div class="form-actions">
@@ -1549,7 +1549,7 @@ export function renderRolesView(props: { role: RoleForm; permissions?: Record<st
   const { role, permissions = {}, user_count = 0, csrf, actions = ['view','create','edit','delete'] } = props;
   const permRows = ['items','kategori','pelanggan','users','roles'].map(menu => {
     const cell = actions.map(a => html`<td>${permissions[menu]?.includes(a) ? '✅' : '—'}</td>`).join('');
-    return html`<tr><td><strong>${menu}</strong></td>${cell}</tr>`;
+    return html`<tr><td><strong>${menu}</strong></td>${raw(cell)}</tr>`;
   }).join('');
   return renderBaseItem({
     title: 'Detail Role - CRUD Item',
@@ -1574,7 +1574,7 @@ export function renderRolesView(props: { role: RoleForm; permissions?: Record<st
             <th scope="col">View</th><th scope="col">Create</th><th scope="col">Edit</th><th scope="col">Delete</th>
           </tr>
         </thead>
-        <tbody>${permRows}</tbody>
+        <tbody>${raw(permRows)}</tbody>
       </table>
       <div class="form-actions" style="margin-top: 20px;">
         <a href="/roles" class="btn">Kembali</a>

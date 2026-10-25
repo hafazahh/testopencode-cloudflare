@@ -24,3 +24,9 @@ database_id = "016434ea-d911-4825-b20d-128df18c826b"
 # "local" hanya untuk `wrangler dev`.
 ENVIRONMENT = "production"
 SITE_URL = "https://testopencode-worker.choirulhaq.workers.dev"
+
+# Aset statis (CSS + JS) — direferensikan render.ts sebagai /style.css, /confirm.js,
+# /margin.js, /pembelian.js, /penjualan.js, /kartu-stok.js, /favicon.svg.
+# Tanpa binding ini semua URL itu 404 dan UI tampil tanpa gaya.
+[assets]
+directory = "./static"
