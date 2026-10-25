@@ -105,7 +105,9 @@ const MENU_HREF: Record<string, string> = {
 };
 
 function navLinks(user_perms: Record<string, string[]>): Raw {
-  const menu = user_perms.menu ?? [];
+  // Peran menyimpan permission per modul (items, kategori, ...) dan TIDAK punya
+  // kunci `menu` terpisah — jadi menu diturunkan dari kunci permission itu.
+  const menu = user_perms.menu ?? Object.keys(user_perms);
   const parts: string[] = [];
   for (const m of menu) {
     const label = MENU_LABELS[m] ?? m;
