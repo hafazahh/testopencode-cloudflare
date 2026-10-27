@@ -35,26 +35,11 @@ export function register(app: AppHono) {
       return c.html(renderPelangganIndex({current_user: currentUser(c),  pelanggan: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
-
-  app.get('/pelanggan/:id', loginRequired(), hasPermission('pelanggan', 'view'), async (c) => {
-    const db = c.env.DB;
-    const id = Number(c.req.param('id'));
-    const pelanggan = await getPelanggan(db, id);
-    if (!pelanggan) {
-      flash(c, 'error', 'Pelanggan tidak ditemukan!');
-      return c.redirect('/pelanggan');
-    }
-    const session = c.get('session');
-    const csrf = session?.csrf_token ?? '';
-    return c.html(renderPelangganView({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, csrf }));
-  });
-
   app.get('/pelanggan/create', loginRequired(), hasPermission('pelanggan', 'create'), async (c) => {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     return c.html(renderPelangganCreate({current_user: currentUser(c),  csrf }));
   });
-
   app.post('/pelanggan/create', loginRequired(), hasPermission('pelanggan', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
@@ -78,7 +63,18 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Pelanggan berhasil ditambahkan!');
     return c.redirect('/pelanggan');
   });
-
+  app.get('/pelanggan/:id', loginRequired(), hasPermission('pelanggan', 'view'), async (c) => {
+    const db = c.env.DB;
+    const id = Number(c.req.param('id'));
+    const pelanggan = await getPelanggan(db, id);
+    if (!pelanggan) {
+      flash(c, 'error', 'Pelanggan tidak ditemukan!');
+      return c.redirect('/pelanggan');
+    }
+    const session = c.get('session');
+    const csrf = session?.csrf_token ?? '';
+    return c.html(renderPelangganView({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, csrf }));
+  });
   app.get('/pelanggan/:id/edit', loginRequired(), hasPermission('pelanggan', 'edit'), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -91,7 +87,6 @@ export function register(app: AppHono) {
     const csrf = session?.csrf_token ?? '';
     return c.html(renderPelangganEdit({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, csrf }));
   });
-
   app.post('/pelanggan/:id/edit', loginRequired(), hasPermission('pelanggan', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -121,7 +116,6 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Pelanggan berhasil diperbarui!');
     return c.redirect('/pelanggan');
   });
-
   app.post('/pelanggan/:id/delete', loginRequired(), hasPermission('pelanggan', 'delete'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -136,3 +130,4 @@ export function register(app: AppHono) {
     return c.redirect('/pelanggan');
   });
 }
+
