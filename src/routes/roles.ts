@@ -44,28 +44,11 @@ export function register(app: AppHono) {
       return c.html(renderRolesIndex({current_user: currentUser(c),  roles: rows(roleRows), user_perms: perms || {}, csrf }));
     },
   );
-
-  app.get('/roles/:id', loginRequired(), hasPermission('roles', 'view'), async (c) => {
-    const db = c.env.DB;
-    const id = Number(c.req.param('id'));
-    const role = await getRoleById(db, id);
-    if (!role) {
-      flash(c, 'error', 'Role tidak ditemukan!');
-      return c.redirect('/roles');
-    }
-    const session = c.get('session');
-    const csrf = session?.csrf_token ?? '';
-    const perms = role.permissions ? JSON.parse(role.permissions) : {};
-    const userCount = await db.prepare('SELECT COUNT(*) AS n FROM users WHERE role_id = ?').bind(id).first<{ n: number }>();
-    return c.html(renderRolesView({current_user: currentUser(c),  role: role as RoleRow, permissions: perms, user_count: userCount?.n ?? 0, csrf }));
-  });
-
   app.get('/roles/create', loginRequired(), hasPermission('roles', 'create'), async (c) => {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     return c.html(renderRolesCreate({current_user: currentUser(c),  menus: MENUS as never, actions: ACTIONS as never, csrf }));
   });
-
   app.post('/roles/create', loginRequired(), hasPermission('roles', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
@@ -96,7 +79,20 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Role berhasil ditambahkan!');
     return c.redirect('/roles');
   });
-
+  app.get('/roles/:id', loginRequired(), hasPermission('roles', 'view'), async (c) => {
+    const db = c.env.DB;
+    const id = Number(c.req.param('id'));
+    const role = await getRoleById(db, id);
+    if (!role) {
+      flash(c, 'error', 'Role tidak ditemukan!');
+      return c.redirect('/roles');
+    }
+    const session = c.get('session');
+    const csrf = session?.csrf_token ?? '';
+    const perms = role.permissions ? JSON.parse(role.permissions) : {};
+    const userCount = await db.prepare('SELECT COUNT(*) AS n FROM users WHERE role_id = ?').bind(id).first<{ n: number }>();
+    return c.html(renderRolesView({current_user: currentUser(c),  role: role as RoleRow, permissions: perms, user_count: userCount?.n ?? 0, csrf }));
+  });
   app.get('/roles/:id/edit', loginRequired(), hasPermission('roles', 'edit'), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -110,7 +106,6 @@ export function register(app: AppHono) {
     const perms = role.permissions ? JSON.parse(role.permissions) : {};
     return c.html(renderRolesEdit({current_user: currentUser(c),  role: role as RoleRow, permissions: perms, current_perms: perms, menus: MENUS as never, actions: ACTIONS as never, csrf }));
   });
-
   app.post('/roles/:id/edit', loginRequired(), hasPermission('roles', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -147,7 +142,6 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Role berhasil diperbarui!');
     return c.redirect('/roles');
   });
-
   app.post('/roles/:id/delete', loginRequired(), hasPermission('roles', 'delete'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -167,3 +161,4 @@ export function register(app: AppHono) {
     return c.redirect('/roles');
   });
 }
+
