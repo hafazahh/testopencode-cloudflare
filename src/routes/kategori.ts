@@ -35,27 +35,11 @@ export function register(app: AppHono) {
       return c.html(renderKategoriIndex({current_user: currentUser(c),  kategori: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
-
-  app.get('/kategori/:id', loginRequired(), hasPermission('kategori', 'view'), async (c) => {
-    const db = c.env.DB;
-    const id = Number(c.req.param('id'));
-    const kategori = await getKategori(db, id);
-    if (!kategori) {
-      flash(c, 'error', 'Kategori tidak ditemukan!');
-      return c.redirect('/kategori');
-    }
-    const session = c.get('session');
-    const csrf = session?.csrf_token ?? '';
-    const itemCount = await db.prepare('SELECT COUNT(*) AS n FROM items WHERE category = ?').bind(kategori.nama).first<{ n: number }>();
-    return c.html(renderKategoriView({current_user: currentUser(c),  kategori: kategori as KategoriRow, item_count: itemCount?.n ?? 0, csrf }));
-  });
-
   app.get('/kategori/create', loginRequired(), hasPermission('kategori', 'create'), async (c) => {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     return c.html(renderKategoriCreate({current_user: currentUser(c),  csrf }));
   });
-
   app.post('/kategori/create', loginRequired(), hasPermission('kategori', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
@@ -81,7 +65,19 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Kategori berhasil ditambahkan!');
     return c.redirect('/kategori');
   });
-
+  app.get('/kategori/:id', loginRequired(), hasPermission('kategori', 'view'), async (c) => {
+    const db = c.env.DB;
+    const id = Number(c.req.param('id'));
+    const kategori = await getKategori(db, id);
+    if (!kategori) {
+      flash(c, 'error', 'Kategori tidak ditemukan!');
+      return c.redirect('/kategori');
+    }
+    const session = c.get('session');
+    const csrf = session?.csrf_token ?? '';
+    const itemCount = await db.prepare('SELECT COUNT(*) AS n FROM items WHERE category = ?').bind(kategori.nama).first<{ n: number }>();
+    return c.html(renderKategoriView({current_user: currentUser(c),  kategori: kategori as KategoriRow, item_count: itemCount?.n ?? 0, csrf }));
+  });
   app.get('/kategori/:id/edit', loginRequired(), hasPermission('kategori', 'edit'), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -94,7 +90,6 @@ export function register(app: AppHono) {
     const csrf = session?.csrf_token ?? '';
     return c.html(renderKategoriEdit({current_user: currentUser(c),  kategori: kategori as KategoriRow, csrf }));
   });
-
   app.post('/kategori/:id/edit', loginRequired(), hasPermission('kategori', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -126,7 +121,6 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Kategori berhasil diperbarui!');
     return c.redirect('/kategori');
   });
-
   app.post('/kategori/:id/delete', loginRequired(), hasPermission('kategori', 'delete'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -146,3 +140,4 @@ export function register(app: AppHono) {
     return c.redirect('/kategori');
   });
 }
+
