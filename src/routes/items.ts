@@ -37,25 +37,6 @@ export function register(app: AppHono) {
       return c.html(renderIndex({current_user: currentUser(c),  items: itemRows(rows.results), user_perms: perms || {}, csrf }));
     },
   );
-
-  app.get(
-    '/item/:id',
-    loginRequired(),
-    hasPermission('items', 'view'),
-    async (c) => {
-      const db = c.env.DB;
-      const id = Number(c.req.param('id'));
-      const item = await getItem(db, id);
-      if (!item) {
-        flash(c, 'error', 'Item tidak ditemukan!');
-        return c.redirect('/');
-      }
-      const session = c.get('session');
-      const csrf = session?.csrf_token ?? '';
-      return c.html(renderViewItem({current_user: currentUser(c),  item: item as ItemRow, csrf }));
-    },
-  );
-
   app.get(
     '/item/create',
     loginRequired(),
@@ -109,7 +90,23 @@ export function register(app: AppHono) {
       return c.redirect('/');
     },
   );
-
+  app.get(
+    '/item/:id',
+    loginRequired(),
+    hasPermission('items', 'view'),
+    async (c) => {
+      const db = c.env.DB;
+      const id = Number(c.req.param('id'));
+      const item = await getItem(db, id);
+      if (!item) {
+        flash(c, 'error', 'Item tidak ditemukan!');
+        return c.redirect('/');
+      }
+      const session = c.get('session');
+      const csrf = session?.csrf_token ?? '';
+      return c.html(renderViewItem({current_user: currentUser(c),  item: item as ItemRow, csrf }));
+    },
+  );
   app.get(
     '/item/:id/edit',
     loginRequired(),
@@ -128,7 +125,6 @@ export function register(app: AppHono) {
       return c.html(renderEditItem({current_user: currentUser(c),  item: item as ItemRow, categories: rows.map((r) => ({ nama: r.nama })), csrf }));
     },
   );
-
   app.post(
     '/item/:id/edit',
     loginRequired(),
@@ -165,7 +161,6 @@ export function register(app: AppHono) {
       return c.redirect('/');
     },
   );
-
   app.post(
     '/item/:id/delete',
     loginRequired(),
@@ -186,3 +181,4 @@ export function register(app: AppHono) {
     },
   );
 }
+
