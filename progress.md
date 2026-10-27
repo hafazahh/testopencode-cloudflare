@@ -54,3 +54,27 @@
 - Evaluasi Worker: src/index.ts (middleware + CSP nonce), src/auth.ts (session/D1/rate-limit/PBKDF2), src/db.ts (D1 query layer + createPembelianTx/createPenjualanTx atomic), src/routes/* (18 file route), src/render.ts (37 render*), src/schema.ts (12 tabel).
 - Run local: `npm run dev` → wrangler dev --port 8790 (D1 miniflare). Test: `npm run test:local`.
 - Findings disimpan di findings.md (Fase E — Recon section): coverage per tes, API surface, command lokal, naming convention, open questions.
+
+## Sesi 8 — Fase F: perbaikan UI (2026-10-25)
+
+Empat bug berturut-turut, semuanya di Worker, bukan di role:
+
+1. **Aset statis 404** → tambah `[assets] directory = "./static"`; 8 URL
+   `/static/x` → `/x`. Commit `8c9c3bc`.
+2. **HTML double-escape** → 47 situs variabel + 12 situs inline dibungkus
+   `raw()`. Gejala: `<a href="/item/create">` tampil sebagai
+   `&lt;a href=&quot;/item/create&quot;&gt;`. Commit `8c9c3bc`.
+3. **Menu kosong** → `navLinks` tidak lagi bergantung pada `user_perms.menu`
+   yang tidak pernah ada; pakai `Object.keys(user_perms)`. Commit `d8dad2f`.
+4. **Info user + Logout tidak tampil** → `AppState.user`, query
+   `JOIN roles`, `c.set('user', user)`, `currentUser(c)`, `PageProps`, dan
+   33 pemanggilan render mengirim `current_user(c)`. Commit `e98a737`.
+
+Catatan: versi 3 di-deploy lebih dulu, jadi user melihat menu sudah ada
+sebelum info user muncul.
+
+Data: D1 remote diisi 4 item contoh (Mouse Wireless, Keyboard Mekanik,
+Kabel HDMI 2m, Mousepad XL) supaya tabel tidak kosong.
+
+Alat yang dipakai: `read_file`, `search_files`, `patch`, `terminal` (curl +
+wrangler), dan browser headless. **Bukan** lewat tool MCP CBM.

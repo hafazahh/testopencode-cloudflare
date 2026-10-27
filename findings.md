@@ -264,3 +264,41 @@ npm run dev                      #  ← wrangler dev --port 8790 (D1 lokal via m
   TypeScript tidak sinkron dengan config wrangler.
 - Ends of D1 FK: `ON DELETE` constraint tidak aktif di D1 default; validasi
   di-handle di app (seperti `supplier` diblokir hapus kalau ada pembelian).
+
+---
+
+## Temuan — Fase F (perbaikan UI, 2026-10-25)
+
+### 1. `[assets]` menyajikan di AKAR, bukan di dalam foldernya
+`[assets] directory = "./static"` membuat `static/style.css` bisa diakses di
+`/style.css`. Permintaan ke `/static/style.css` tetap 404. Jadi begitu memakai
+binding aset, semua URL di markup harus disesuaikan — jangan mengasumsikan
+struktur folder ikut terekspos.
+
+### 2. Tag template yang meng-escape harus punya jalan keluar eksplisit
+`html\`\`` proyek ini meng-escape setiap nilai ter-interpolasi. Nilai yang
+sudah berupa HTML harus dibungkus `raw()` — termasuk saat fragmen itu sendiri
+adalah hasil `html\`\`` (escape ganda). Gejalanya khas: tag muncul sebagai
+teks literal di halaman (`&lt;a href=&quot;...&quot;&gt;`), dan tidak ada
+error JavaScript sama sekali karena markupnya sah, hanya salah tempat.
+
+### 3. `Array.map()` tanpa `.join('')` di-interpolasi sebagai string
+`${items.map(...)}` menghasilkan array; `html` mengubahnya lewat `String(v)`,
+yang menyisipkan koma antar elemen. Gejala: `<option>a</option>,<option>b</option>`.
+Selalu `.join('')` sebelum membungkusnya dengan `raw()`.
+
+### 4. Menu jangan diturunkan dari kunci yang tidak ada
+`navLinks()` membaca `user_perms.menu`, sementara permission peran hanya
+menyimpan kunci per modul. Menu selalu kosong tanpa error. Turunkan dari
+`Object.keys(user_perms)` — sumber kebenaran yang sudah ada.
+
+### 5. Layout butuh data yang tidak dilewatkan
+`renderBase` menampilkan nama pengguna + tombol Logout hanya bila
+`props.current_user` ada. Tidak ada route yang mengirimnya, dan
+`sessionMiddleware` tidak menyimpan objek user. Akibatnya dua fitur ini mati
+senyap di semua halaman.
+
+### 6. Yang TIDAK menyebabkan gejala
+Role/permission. `admin` sudah all-access (10 modul) sejak seed, identik di
+D1 lokal maupun remote. Gejala "hitam putih" dan "tombol tidak tampil" murni
+masalah penyajian aset dan escaping.
