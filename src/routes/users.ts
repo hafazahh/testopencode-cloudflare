@@ -38,28 +38,6 @@ export function register(app: AppHono) {
       return c.html(renderUsersIndex({current_user: currentUser(c),  users: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
-
-  app.get('/users/:id', loginRequired(), hasPermission('users', 'view'), async (c) => {
-    const db = c.env.DB;
-    const id = Number(c.req.param('id'));
-    const user = await getUserById(db, id);
-    if (!user) {
-      flash(c, 'error', 'User tidak ditemukan!');
-      return c.redirect('/users');
-    }
-    const session = c.get('session');
-    const csrf = session?.csrf_token ?? '';
-    const role = await db.prepare('SELECT nama as role_nama FROM roles WHERE id = ?').bind(user.role_id).first();
-    const userView = {
-      id: user.id,
-      username: user.username,
-      role_id: user.role_id,
-      created_at: user.created_at,
-      role_nama: role?.role_nama ?? '',
-    } as UserRow;
-    return c.html(renderUsersView({current_user: currentUser(c),  user: userView, csrf }));
-  });
-
   app.get('/users/create', loginRequired(), hasPermission('users', 'create'), async (c) => {
     const db = c.env.DB;
     const session = c.get('session');
@@ -67,7 +45,6 @@ export function register(app: AppHono) {
     const roles = await listRoles(db);
     return c.html(renderUsersCreate({current_user: currentUser(c),  roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
   });
-
   app.post('/users/create', loginRequired(), hasPermission('users', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
@@ -102,7 +79,26 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'User berhasil ditambahkan!');
     return c.redirect('/users');
   });
-
+  app.get('/users/:id', loginRequired(), hasPermission('users', 'view'), async (c) => {
+    const db = c.env.DB;
+    const id = Number(c.req.param('id'));
+    const user = await getUserById(db, id);
+    if (!user) {
+      flash(c, 'error', 'User tidak ditemukan!');
+      return c.redirect('/users');
+    }
+    const session = c.get('session');
+    const csrf = session?.csrf_token ?? '';
+    const role = await db.prepare('SELECT nama as role_nama FROM roles WHERE id = ?').bind(user.role_id).first();
+    const userView = {
+      id: user.id,
+      username: user.username,
+      role_id: user.role_id,
+      created_at: user.created_at,
+      role_nama: role?.role_nama ?? '',
+    } as UserRow;
+    return c.html(renderUsersView({current_user: currentUser(c),  user: userView, csrf }));
+  });
   app.get('/users/:id/edit', loginRequired(), hasPermission('users', 'edit'), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -123,7 +119,6 @@ export function register(app: AppHono) {
     };
     return c.html(renderUsersEdit({current_user: currentUser(c),  user: userView, roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
   });
-
   app.post('/users/:id/edit', loginRequired(), hasPermission('users', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -166,7 +161,6 @@ export function register(app: AppHono) {
     }
     return c.redirect('/users');
   });
-
   app.post('/users/:id/delete', loginRequired(), hasPermission('users', 'delete'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -185,3 +179,4 @@ export function register(app: AppHono) {
     return c.redirect('/users');
   });
 }
+
