@@ -78,3 +78,68 @@ Kabel HDMI 2m, Mousepad XL) supaya tabel tidak kosong.
 
 Alat yang dipakai: `read_file`, `search_files`, `patch`, `terminal` (curl +
 wrangler), dan browser headless. **Bukan** lewat tool MCP CBM.
+
+## Sesi 9 — Fase G: perbaikan urutan route CRUD (2026-10-27)
+
+**Bug**: tombol "Tambah" tidak memunculkan form tambah. Sesudah login admin,
+`GET /<res>/create` membalas 302 ke halaman index dengan flash "X tidak
+ditemukan!".
+
+**Akar masalah**: registrasi route `GET /<res>/:id` berada SEBELUM
+`GET /<res>/create`. Hono mencocokkan sesuai URUTAN registrasi, jadi
+`/item/create` ditelan `/:id` dengan `id='create'` → baris tidak ditemukan →
+flash + 302. Route bersarang 2 segmen (`/:id/edit`, `/:id/delete`) AMAN karena
+pada segmen kedua cocok persis, bukan param.
+
+**Reproduksi live sebelum fix** (semuanya sesudah login admin):
+`/item/create`, `/kategori/create`, `/pelanggan/create`, `/supplier/create`,
+`/users/create`, `/roles/create` → 302. `/pembelian/create`, `/penjualan/create`
+→ 200 (create memang sudah terdaftar sebelum `/:id` di dua file itu).
+
+**Perbaikan — HANYA urutan blok route, nol perubahan isi handler**:
+blok `GET /<res>/create` + `POST /<res>/create` dipindahkan ke ATAS blok
+`GET /<res>/:id`. Isi handler dan nama variabel tidak diubah — terverifikasi
+multiset baris non-kosong identik sebelum vs sesudah. `render.ts`, `auth.ts`,
+`db.ts`, `index.ts`, `static/`, `wrangler.toml` TIDAK disentuh.
+
+| file | commit |
+|---|---|
+| src/routes/items.ts | `04b7f62` |
+| src/routes/kategori.ts | `d8ea394` |
+| src/routes/pelanggan.ts | `be60e27` |
+| src/routes/supplier.ts | `590d74a` |
+| src/routes/users.ts | `dce189f` |
+| src/routes/roles.ts | `ba0c72e` |
+
+**Tutup celah verifikasi**: file baru `scripts/tests/02_forms.test.mjs` —
+sesudah login admin, GET setiap `/create` wajib 200 DAN body memuat
+`<form method="POST" action="/<res>/create"`. Bukti asersi menangkap bug:
+dijalankan di worktree commit pre-fix `e98a737` → **16 PASS / 18 FAIL** (tepat
+6 resource × 3 asersi), sedangkan pembelian + penjualan lolos sebagai kontrol.
+
+**Hasil verifikasi**:
+- `node scripts/tscheck.mjs` (20 file) → **0 diagnostic**
+- `node scripts/run_local.mjs` → **73 PASS, 0 FAIL** (39 security + 34 forms);
+  sebelumnya 39/0, jadi tanpa regresi
+- Lokal (`wrangler dev --port 8790 --var ENVIRONMENT:local` + seed lokal):
+  8/8 URL /create → 200, 2 `<form>` per halaman
+- LIVE (sesudah `wrangler deploy`): login admin + CSRF, 8/8 URL /create → 200,
+  body memuat tag `<form method="POST" action="/.../create"` persis
+
+| /create | lokal | live |
+|---|---|---|
+| /item/create | 200 (2 form) | 200 (2 form) |
+| /kategori/create | 200 (2 form) | 200 (2 form) |
+| /pelanggan/create | 200 (2 form) | 200 (2 form) |
+| /supplier/create | 200 (2 form) | 200 (2 form) |
+| /users/create | 200 (2 form) | 200 (2 form) |
+| /roles/create | 200 (2 form) | 200 (2 form) |
+| /pembelian/create | 200 (2 form) | 200 (2 form) |
+| /penjualan/create | 200 (2 form) | 200 (2 form) |
+
+Tidak ada regresi route lain: `/:id` dan `/:id/edit` untuk item, kategori,
+users, roles tetap 200. Pelanggan/supplier/pembelian/penjualan `/:id` → 302
+BUKAN regresi: tabel seed lokal masih kosong (COUNT = 0), jadi handler benar
+melakukan flash "tidak ditemukan".
+
+Deploy: Version ID `4553b4f6-5795-47d7-883a-c2e1f34021c9`.
