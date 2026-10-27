@@ -36,26 +36,11 @@ export function register(app: AppHono) {
       return c.html(renderSupplierIndex({current_user: currentUser(c),  suppliers: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );
-
-  app.get('/supplier/:id', loginRequired(), hasPermission('supplier', 'view'), async (c) => {
-    const db = c.env.DB;
-    const id = Number(c.req.param('id'));
-    const supplier = await getSupplier(db, id);
-    if (!supplier) {
-      flash(c, 'error', 'Supplier tidak ditemukan!');
-      return c.redirect('/supplier');
-    }
-    const session = c.get('session');
-    const csrf = session?.csrf_token ?? '';
-    return c.html(renderSupplierView({current_user: currentUser(c),  supplier: supplier as SupplierRow, csrf }));
-  });
-
   app.get('/supplier/create', loginRequired(), hasPermission('supplier', 'create'), async (c) => {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     return c.html(renderSupplierCreate({current_user: currentUser(c),  csrf }));
   });
-
   app.post('/supplier/create', loginRequired(), hasPermission('supplier', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const form = await c.req.parseBody() as Record<string, string> & { get: (key: string) => string; getAll: (name: string) => string[] };
@@ -78,7 +63,18 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Supplier berhasil ditambahkan!');
     return c.redirect('/supplier');
   });
-
+  app.get('/supplier/:id', loginRequired(), hasPermission('supplier', 'view'), async (c) => {
+    const db = c.env.DB;
+    const id = Number(c.req.param('id'));
+    const supplier = await getSupplier(db, id);
+    if (!supplier) {
+      flash(c, 'error', 'Supplier tidak ditemukan!');
+      return c.redirect('/supplier');
+    }
+    const session = c.get('session');
+    const csrf = session?.csrf_token ?? '';
+    return c.html(renderSupplierView({current_user: currentUser(c),  supplier: supplier as SupplierRow, csrf }));
+  });
   app.get('/supplier/:id/edit', loginRequired(), hasPermission('supplier', 'edit'), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -91,7 +87,6 @@ export function register(app: AppHono) {
     const csrf = session?.csrf_token ?? '';
     return c.html(renderSupplierEdit({current_user: currentUser(c),  supplier: supplier as SupplierRow, csrf }));
   });
-
   app.post('/supplier/:id/edit', loginRequired(), hasPermission('supplier', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -120,7 +115,6 @@ export function register(app: AppHono) {
     else flash(c, 'success', 'Supplier berhasil diperbarui!');
     return c.redirect('/supplier');
   });
-
   app.post('/supplier/:id/delete', loginRequired(), hasPermission('supplier', 'delete'), csrfProtect(), async (c) => {
     const db = c.env.DB;
     const id = Number(c.req.param('id'));
@@ -140,3 +134,4 @@ export function register(app: AppHono) {
     return c.redirect('/supplier');
   });
 }
+
