@@ -46,8 +46,10 @@ export function register(app: AppHono) {
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
       const rows = await listKategori(db);
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
       return c.html(renderCreateItem({current_user: currentUser(c), 
         categories: rows.map((r) => ({ nama: r.nama })),
+        user_perms: perms || {},
         csrf,
       }));
     },
@@ -104,7 +106,8 @@ export function register(app: AppHono) {
       }
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
-      return c.html(renderViewItem({current_user: currentUser(c),  item: item as ItemRow, csrf }));
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+      return c.html(renderViewItem({current_user: currentUser(c),  item: item as ItemRow, user_perms: perms || {}, csrf }));
     },
   );
   app.get(
@@ -122,7 +125,8 @@ export function register(app: AppHono) {
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
       const rows = await listKategori(db);
-      return c.html(renderEditItem({current_user: currentUser(c),  item: item as ItemRow, categories: rows.map((r) => ({ nama: r.nama })), csrf }));
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+      return c.html(renderEditItem({current_user: currentUser(c),  item: item as ItemRow, categories: rows.map((r) => ({ nama: r.nama })), user_perms: perms || {}, csrf }));
     },
   );
   app.post(

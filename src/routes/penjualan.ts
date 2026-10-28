@@ -53,9 +53,11 @@ export function register(app: AppHono) {
       LEFT JOIN stok_akhir sa ON i.id = sa.item_id
       ORDER BY i.nama
     `).all();
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
     return c.html(renderPenjualanCreate({current_user: currentUser(c), 
       pelanggans: pelanggans.map((p) => ({ id: p.id, nama: p.nama })),
       items: items.results as { id: number; nama: string; stok_akhir: number; harga_pokok: number }[],
+      user_perms: perms || {},
       csrf,
     }));
   });
@@ -130,7 +132,8 @@ export function register(app: AppHono) {
       JOIN items i ON pd.item_id = i.id
       WHERE pd.penjualan_id = ?
     `).bind(id).all<PenjualanDetailRow>();
-    return c.html(renderPenjualanView({current_user: currentUser(c),  penjualan: penjualan as PenjualanRow, detail: detail.results as PenjualanDetailRow[], csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderPenjualanView({current_user: currentUser(c),  penjualan: penjualan as PenjualanRow, detail: detail.results as PenjualanDetailRow[], user_perms: perms || {}, csrf }));
   });
 
   app.post('/penjualan/:id/delete', loginRequired(), hasPermission('penjualan', 'delete'), csrfProtect(), async (c) => {

@@ -267,13 +267,13 @@ export function renderIndex(props: { items: ItemRow[]; user_perms: Record<string
   return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Item - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderViewItem(props: { item: ItemRow; csrf: string } & PageProps): string {
+export function renderViewItem(props: { item: ItemRow; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { item, csrf } = props;
   const marginPct = formatPercent(item.margin, item.harga_pokok);
   const marginCls = item.margin > 0 ? 'margin-positive' : item.margin < 0 ? 'margin-negative' : '';
   return renderBaseItem({ current_user: props.current_user, 
     title: item.nama + ' - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail Item</h2></div>
@@ -296,7 +296,7 @@ export function renderViewItem(props: { item: ItemRow; csrf: string } & PageProp
   });
 }
 
-export function renderCreateItem(props: { nama?: string; harga_pokok?: number; harga_jual?: number; category?: string; categories?: { nama: string }[]; csrf: string } & PageProps): string {
+export function renderCreateItem(props: { nama?: string; harga_pokok?: number; harga_jual?: number; category?: string; categories?: { nama: string }[]; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { nama = '', harga_pokok = 0, harga_jual = 0, category = '', categories = [] } = props;
   const catOptions = categories.map((c) => {
     const selected = category === c.nama ? 'selected' : '';
@@ -304,7 +304,7 @@ export function renderCreateItem(props: { nama?: string; harga_pokok?: number; h
   }).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Item - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/item/create" class="form">${csrfField(props.csrf)}
@@ -337,7 +337,7 @@ export function renderCreateItem(props: { nama?: string; harga_pokok?: number; h
   });
 }
 
-export function renderEditItem(props: { item: ItemRow; categories: { nama: string }[]; csrf: string } & PageProps): string {
+export function renderEditItem(props: { item: ItemRow; categories: { nama: string }[]; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { item, categories, csrf } = props;
   const catOptions = categories.map((c) => {
     const selected = item.category === c.nama ? 'selected' : '';
@@ -346,7 +346,7 @@ export function renderEditItem(props: { item: ItemRow; categories: { nama: strin
   const marginVal = item.harga_jual - item.harga_pokok;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Item - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <form method="POST" action="/item/${item.id}/edit" class="form">${csrfField(csrf)}
@@ -379,13 +379,13 @@ export function renderEditItem(props: { item: ItemRow; categories: { nama: strin
   });
 }
 
-export function renderError(props: { code: string; title: string; message: string; current_user?: boolean; csrf: string }): string {
+export function renderError(props: { code: string; title: string; message: string; current_user?: boolean; csrf: string; user_perms?: Record<string, string[]> }): string {
   const { code, title, message, current_user, csrf } = props;
   const label = current_user ? 'Kembali ke Daftar Item' : 'Ke Halaman Login';
   const href = current_user ? '/index' : '/login';
   return renderBaseItem({
     title: code + ' - ' + title,
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="container">
@@ -402,7 +402,7 @@ export function renderError(props: { code: string; title: string; message: strin
   });
 }
 
-export function renderLogin(props: { csrf: string; non_admin_users?: { username: string; role_nama: string }[]; flashMessages?: Flash[] }): string {
+export function renderLogin(props: { csrf: string; non_admin_users?: { username: string; role_nama: string }[]; flashMessages?: Flash[]; user_perms?: Record<string, string[]> }): string {
   const { csrf, flashMessages } = props;
   // SATU SATUNYA tabel user di halaman login: kredensial demo dengan password
   // polos (demo portfolio — persetujuan user). Tabel lama "Informasi Login"
@@ -426,7 +426,7 @@ export function renderLogin(props: { csrf: string; non_admin_users?: { username:
   `).join('');
   return renderBaseItem({
     title: 'Login - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     // Tanpa ini pesan error (login gagal, lockout, dsb) tidak pernah tampil di
     // halaman login — flash disimpan di cookie tapi tidak dirender.
@@ -510,11 +510,11 @@ export function renderKategoriIndex(props: { kategori: KategoriRow[]; user_perms
   return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Kategori - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderKategoriCreate(props: { nama?: string; deskripsi?: string; csrf: string } & PageProps): string {
+export function renderKategoriCreate(props: { nama?: string; deskripsi?: string; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { nama = '', deskripsi = '' } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Kategori - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/kategori/create" class="form">${csrfField(props.csrf)}
@@ -535,11 +535,11 @@ export function renderKategoriCreate(props: { nama?: string; deskripsi?: string;
   });
 }
 
-export function renderKategoriEdit(props: { kategori: KategoriFormProps; csrf: string } & PageProps): string {
+export function renderKategoriEdit(props: { kategori: KategoriFormProps; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { kategori, csrf } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Kategori - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <form method="POST" action="/kategori/${kategori.id}/edit" class="form">${csrfField(csrf)}
@@ -560,11 +560,11 @@ export function renderKategoriEdit(props: { kategori: KategoriFormProps; csrf: s
   });
 }
 
-export function renderKategoriView(props: { kategori: KategoriFormProps; item_count: number; csrf: string } & PageProps): string {
+export function renderKategoriView(props: { kategori: KategoriFormProps; item_count: number; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { kategori, item_count, csrf } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: kategori.nama + ' - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail Kategori</h2></div>
@@ -627,11 +627,11 @@ export function renderPelangganIndex(props: { pelanggan: PelangganRow[]; user_pe
   return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Pelanggan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderPelangganCreate(props: { nama?: string; email?: string; telepon?: string; alamat?: string; csrf: string } & PageProps): string {
+export function renderPelangganCreate(props: { nama?: string; email?: string; telepon?: string; alamat?: string; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { nama = '', email = '', telepon = '', alamat = '' } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Pelanggan - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/pelanggan/create" class="form">${csrfField(props.csrf)}
@@ -660,11 +660,11 @@ export function renderPelangganCreate(props: { nama?: string; email?: string; te
   });
 }
 
-export function renderPelangganEdit(props: { pelanggan: PelangganForm; csrf: string } & PageProps): string {
+export function renderPelangganEdit(props: { pelanggan: PelangganForm; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { pelanggan, csrf } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Pelanggan - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <form method="POST" action="/pelanggan/${pelanggan.id}/edit" class="form">${csrfField(csrf)}
@@ -693,11 +693,11 @@ export function renderPelangganEdit(props: { pelanggan: PelangganForm; csrf: str
   });
 }
 
-export function renderPelangganView(props: { pelanggan: PelangganForm; csrf: string } & PageProps): string {
+export function renderPelangganView(props: { pelanggan: PelangganForm; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { pelanggan, csrf } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: pelanggan.nama + ' - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail Pelanggan</h2></div>
@@ -760,11 +760,11 @@ export function renderSupplierIndex(props: { suppliers: SupplierRow[]; user_perm
   return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Supplier - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderSupplierCreate(props: { nama?: string; kontak?: string; alamat?: string; csrf: string } & PageProps): string {
+export function renderSupplierCreate(props: { nama?: string; kontak?: string; alamat?: string; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { nama = '', kontak = '', alamat = '' } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Supplier - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/supplier/create" class="form">${csrfField(props.csrf)}
@@ -789,11 +789,11 @@ export function renderSupplierCreate(props: { nama?: string; kontak?: string; al
   });
 }
 
-export function renderSupplierEdit(props: { supplier: SupplierForm; csrf: string } & PageProps): string {
+export function renderSupplierEdit(props: { supplier: SupplierForm; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { supplier, csrf } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Supplier - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <form method="POST" action="/supplier/${supplier.id}/edit" class="form">${csrfField(csrf)}
@@ -818,11 +818,11 @@ export function renderSupplierEdit(props: { supplier: SupplierForm; csrf: string
   });
 }
 
-export function renderSupplierView(props: { supplier: SupplierForm; csrf: string } & PageProps): string {
+export function renderSupplierView(props: { supplier: SupplierForm; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { supplier, csrf } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: supplier.nama + ' - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail Supplier</h2></div>
@@ -883,7 +883,7 @@ export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_pe
   return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Pembelian - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderPembelianCreate(props: { items?: { id: number; nama: string; harga_pokok: number }[]; suppliers?: { id: number; nama: string }[]; supplier_id?: number; tanggal?: string; catatan?: string; csrf: string } & PageProps): string {
+export function renderPembelianCreate(props: { items?: { id: number; nama: string; harga_pokok: number }[]; suppliers?: { id: number; nama: string }[]; supplier_id?: number; tanggal?: string; catatan?: string; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { items = [], suppliers = [], tanggal = '', catatan = '' } = props;
   // Supplier wajib dari prop terpisah (bukan query item) — sebelumnya dropdown
   // hanya berisi placeholder `-- Pilih Supplier --` sehingga form ber-`required`
@@ -897,7 +897,7 @@ export function renderPembelianCreate(props: { items?: { id: number; nama: strin
   const itemsJson = items.map(i => JSON.stringify({ id: i.id, nama: i.nama, harga_pokok: i.harga_pokok })).join(',');
   return renderBaseItem({ current_user: props.current_user,
     title: 'Tambah Pembelian - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/pembelian/create" class="form" id="pembelian-form">${csrfField(props.csrf)}
@@ -950,7 +950,7 @@ export function renderPembelianCreate(props: { items?: { id: number; nama: strin
   });
 }
 
-export function renderPembelianView(props: { pembelian: PembelianForm; detail: PembelianDetailRow[]; csrf: string } & PageProps): string {
+export function renderPembelianView(props: { pembelian: PembelianForm; detail: PembelianDetailRow[]; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { pembelian, detail, csrf } = props;
   const detailRows = detail.map((d, i) => html`
     <tr>
@@ -963,7 +963,7 @@ export function renderPembelianView(props: { pembelian: PembelianForm; detail: P
   `).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: pembelian.nomor_transaksi + ' - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail Pembelian</h2></div>
@@ -1040,14 +1040,14 @@ export function renderPenjualanIndex(props: { penjualan: PenjualanRow[]; user_pe
   return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Penjualan - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: string }[]; items?: { id: number; nama: string; stok_akhir: number; harga_pokok: number }[]; tanggal?: string; catatan?: string; csrf: string } & PageProps): string {
+export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: string }[]; items?: { id: number; nama: string; stok_akhir: number; harga_pokok: number }[]; tanggal?: string; catatan?: string; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { pelanggans = [], items = [], tanggal = '', catatan = '' } = props;
   const pelangganOptions = pelanggans.map(p => `<option value="${p.id}">${p.nama}</option>`).join('');
   const itemOptions = items.map(i => `<option value="${i.id}">${i.nama}</option>`).join('');
   const itemsJson = items.map(i => JSON.stringify({ id: i.id, nama: i.nama, stok_akhir: i.stok_akhir, harga_pokok: i.harga_pokok })).join(',');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Penjualan - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/penjualan/create" class="form" id="penjualan-form">${csrfField(props.csrf)}
@@ -1101,7 +1101,7 @@ export function renderPenjualanCreate(props: { pelanggans?: { id: number; nama: 
   });
 }
 
-export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: PenjualanDetailRow[]; csrf: string } & PageProps): string {
+export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: PenjualanDetailRow[]; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { penjualan, detail, csrf } = props;
   const detailRows = detail.map((d, i) => html`
     <tr>
@@ -1115,7 +1115,7 @@ export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: P
   `).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: penjualan.nomor_transaksi + ' - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail Penjualan</h2></div>
@@ -1154,7 +1154,7 @@ export function renderPenjualanView(props: { penjualan: PenjualanForm; detail: P
 // ---------- stok ----------
 type KartuForm = { id?: number; nama: string; stok_akhir?: number; harga_pokok?: number };
 
-export function renderStokKartu(props: { items: { id: number; nama: string }[]; selected_item: KartuForm; mutasi?: MutasiRow[]; csrf: string } & PageProps): string {
+export function renderStokKartu(props: { items: { id: number; nama: string }[]; selected_item: KartuForm; mutasi?: MutasiRow[]; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { items, selected_item, mutasi = [], csrf } = props;
   const mutasiRows = mutasi.map((m, i) => html`
     <tr>
@@ -1168,7 +1168,7 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
   `).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Kartu Stok - Sistem Inventory',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header">
@@ -1182,6 +1182,7 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
             <button type="submit" class="btn btn-primary btn-sm" style="margin-left:8px;">Tampilkan</button>
           </div>
         </form>
+        <a href="/" class="btn btn-secondary">Kembali ke Daftar Item</a>
       </div>
       ${selected_item
         ? raw(html`
@@ -1208,7 +1209,7 @@ export function renderStokKartu(props: { items: { id: number; nama: string }[]; 
 }
 
 // ---------- laporan ----------
-export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; start_date?: string; end_date?: string; total_transaksi?: number; total_item?: number; total_penjualan?: number; total_margin?: number; csrf: string } & PageProps): string {
+export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; start_date?: string; end_date?: string; total_transaksi?: number; total_item?: number; total_penjualan?: number; total_margin?: number; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { details = [], start_date = '', end_date = '', total_transaksi = 0, total_item = 0, total_penjualan = 0, total_margin = 0, csrf } = props;
   const detailRows = details.map((d, i) => {
     const margin = d.harga_jual - d.harga_pokok;
@@ -1229,7 +1230,7 @@ export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; st
   }).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Laporan Penjualan - Sistem Inventory',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header">
@@ -1246,6 +1247,7 @@ export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; st
           <button type="submit" class="btn btn-primary btn-sm">Filter</button>
           <a href="/laporan/penjualan" class="btn btn-secondary btn-sm">Reset</a>
         </form>
+        <a href="/" class="btn btn-secondary">Kembali ke Daftar Item</a>
       </div>
       <div class="summary-cards">
         <div class="summary-card"><div class="summary-label">Total Transaksi</div><div class="summary-value">${total_transaksi}</div></div>
@@ -1268,7 +1270,7 @@ export function renderLaporanPenjualan(props: { details?: LaporanDetailRow[]; st
   });
 }
 
-export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: number; total_value?: number; low_stock_count?: number; out_of_stock_count?: number; csrf: string } & PageProps): string {
+export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: number; total_value?: number; low_stock_count?: number; out_of_stock_count?: number; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { items = [], total_items = 0, total_value = 0, low_stock_count = 0, out_of_stock_count = 0, csrf } = props;
   const itemRows = items.map((i, idx) => {
     let status = 'Aman';
@@ -1289,10 +1291,10 @@ export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: n
   }).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Laporan Stok - Sistem Inventory',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
-      <div class="list-header"><h2>Laporan Stok</h2></div>
+      <div class="list-header"><h2>Laporan Stok</h2><a href="/" class="btn btn-secondary">Kembali ke Daftar Item</a></div>
       <div class="summary-cards">
         <div class="summary-card"><div class="summary-label">Total Item</div><div class="summary-value">${total_items}</div></div>
         <div class="summary-card"><div class="summary-label">Total Nilai Stok</div><div class="summary-value">Rp ${total_value.toLocaleString('id-ID')}</div></div>
@@ -1361,12 +1363,12 @@ export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<s
   return renderBaseItem({ current_user: props.current_user,  title: 'Data User - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderUsersCreate(props: { roles?: { id: number; nama: string }[]; username?: string; role_id?: number; csrf: string } & PageProps): string {
+export function renderUsersCreate(props: { roles?: { id: number; nama: string }[]; username?: string; role_id?: number; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { roles = [], username = '', role_id } = props;
   const roleOptions = roles.map(r => `<option value="${r.id}" ${role_id == r.id ? 'selected' : ''}>${r.nama}</option>`).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah User - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/users/create" class="form">${csrfField(props.csrf)}
@@ -1393,12 +1395,12 @@ export function renderUsersCreate(props: { roles?: { id: number; nama: string }[
   });
 }
 
-export function renderUsersEdit(props: { user: UserRow; roles: { id: number; nama: string }[]; csrf: string } & PageProps): string {
+export function renderUsersEdit(props: { user: UserRow; roles: { id: number; nama: string }[]; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { user, roles, csrf } = props;
   const roleOptions = roles.map(r => `<option value="${r.id}" ${user.role_id == r.id ? 'selected' : ''}>${r.nama}</option>`).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit User - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <form method="POST" action="/users/${user.id}/edit" class="form">${csrfField(csrf)}
@@ -1425,11 +1427,11 @@ export function renderUsersEdit(props: { user: UserRow; roles: { id: number; nam
   });
 }
 
-export function renderUsersView(props: { user: UserRow; csrf: string } & PageProps): string {
+export function renderUsersView(props: { user: UserRow; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { user, csrf } = props;
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Detail User - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail User</h2></div>
@@ -1492,7 +1494,7 @@ export function renderRolesIndex(props: { roles: RoleRow[]; user_perms: Record<s
   return renderBaseItem({ current_user: props.current_user,  title: 'Data Role - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderRolesCreate(props: { menus?: string[]; actions?: string[]; nama?: string; deskripsi?: string; permissions?: Record<string, string[]>; csrf: string } & PageProps): string {
+export function renderRolesCreate(props: { menus?: string[]; actions?: string[]; nama?: string; deskripsi?: string; permissions?: Record<string, string[]>; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { menus = ['items','kategori','pelanggan','users','roles','supplier','pembelian','penjualan','stok','laporan'], actions = ['view','create','edit','delete'], nama = '', deskripsi = '', permissions = {} } = props;
   const menuRows = menus.map(menu => {
     const checked = permissions[menu] ?? [];
@@ -1504,7 +1506,7 @@ export function renderRolesCreate(props: { menus?: string[]; actions?: string[];
   }).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Tambah Role - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/roles/create" class="form">${csrfField(props.csrf)}
@@ -1537,7 +1539,7 @@ export function renderRolesCreate(props: { menus?: string[]; actions?: string[];
   });
 }
 
-export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actions?: string[]; permissions?: Record<string, string[]>; current_perms?: Record<string, string[]>; csrf: string } & PageProps): string {
+export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actions?: string[]; permissions?: Record<string, string[]>; current_perms?: Record<string, string[]>; csrf: string ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { role, menus = ['items','kategori','pelanggan','users','roles','supplier','pembelian','penjualan','stok','laporan'], actions = ['view','create','edit','delete'], permissions = {}, current_perms = {} } = props;
   const menuRows = menus.map(menu => {
     const checked = permissions[menu] ?? current_perms[menu] ?? [];
@@ -1549,7 +1551,7 @@ export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actio
   }).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Edit Role - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: props.csrf,
     content: html`
       <form method="POST" action="/roles/${role.id}/edit" class="form">${csrfField(props.csrf)}
@@ -1582,7 +1584,7 @@ export function renderRolesEdit(props: { role: RoleForm; menus?: string[]; actio
   });
 }
 
-export function renderRolesView(props: { role: RoleForm; permissions?: Record<string, string[]>; user_count?: number; csrf: string; actions?: string[] } & PageProps): string {
+export function renderRolesView(props: { role: RoleForm; permissions?: Record<string, string[]>; user_count?: number; csrf: string; actions?: string[] ; user_perms?: Record<string, string[]> } & PageProps): string {
   const { role, permissions = {}, user_count = 0, csrf, actions = ['view','create','edit','delete'] } = props;
   const permRows = ['items','kategori','pelanggan','users','roles'].map(menu => {
     const cell = actions.map(a => html`<td>${permissions[menu]?.includes(a) ? '✅' : '—'}</td>`).join('');
@@ -1590,7 +1592,7 @@ export function renderRolesView(props: { role: RoleForm; permissions?: Record<st
   }).join('');
   return renderBaseItem({ current_user: props.current_user, 
     title: 'Detail Role - CRUD Item',
-    user_perms: {},
+    user_perms: props.user_perms ?? {},
     csrf_token: csrf,
     content: html`
       <div class="list-header"><h2>Detail Role</h2></div>

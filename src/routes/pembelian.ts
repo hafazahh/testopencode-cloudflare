@@ -55,9 +55,11 @@ export function register(app: AppHono) {
       db.prepare('SELECT id, nama, harga_pokok FROM items ORDER BY nama').all(),
       listSupplier(db),
     ]);
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
     return c.html(renderPembelianCreate({current_user: currentUser(c), 
       items: items.results as { id: number; nama: string; harga_pokok: number }[],
       suppliers: suppliers.map((s) => ({ id: s.id, nama: s.nama })),
+      user_perms: perms || {},
       csrf,
     }));
   });
@@ -130,7 +132,8 @@ export function register(app: AppHono) {
       JOIN items i ON pd.item_id = i.id
       WHERE pd.pembelian_id = ?
     `).bind(id).all<PembelianDetailRow>();
-    return c.html(renderPembelianView({current_user: currentUser(c),  pembelian: pembelian as PembelianRow, detail: detail.results as PembelianDetailRow[], csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderPembelianView({current_user: currentUser(c),  pembelian: pembelian as PembelianRow, detail: detail.results as PembelianDetailRow[], user_perms: perms || {}, csrf }));
   });
 
   app.post('/pembelian/:id/delete', loginRequired(), hasPermission('pembelian', 'delete'), csrfProtect(), async (c) => {

@@ -51,6 +51,7 @@ export function register(app: AppHono) {
       const total_item = details.reduce((s, d) => s + d.qty, 0);
       const total_penjualan = details.reduce((s, d) => s + d.subtotal, 0);
       const total_margin = details.reduce((s, d) => s + (d.subtotal - d.harga_pokok * d.qty), 0);
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
 
       return c.html(renderLaporanPenjualan({current_user: currentUser(c), 
         details,
@@ -60,6 +61,7 @@ export function register(app: AppHono) {
         total_item,
         total_penjualan,
         total_margin,
+        user_perms: perms || {},
         csrf,
       }));
     },
@@ -86,6 +88,7 @@ export function register(app: AppHono) {
       const total_value = items.reduce((s, i) => s + i.qty_akhir * i.harga_pokok_rata, 0);
       const low_stock_count = items.filter((i) => i.qty_akhir > 0 && i.qty_akhir < 10).length;
       const out_of_stock_count = items.filter((i) => i.qty_akhir === 0).length;
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
 
       return c.html(renderLaporanStok({current_user: currentUser(c), 
         items,
@@ -93,6 +96,7 @@ export function register(app: AppHono) {
         total_value,
         low_stock_count,
         out_of_stock_count,
+        user_perms: perms || {},
         csrf,
       }));
     },

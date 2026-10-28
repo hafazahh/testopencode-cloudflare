@@ -45,7 +45,8 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const roles = await listRoles(db);
-    return c.html(renderUsersCreate({current_user: currentUser(c),  roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderUsersCreate({current_user: currentUser(c),  roles: roles.map((r) => ({ id: r.id, nama: r.nama })), user_perms: perms || {}, csrf }));
   });
   app.post('/users/create', loginRequired(), hasPermission('users', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
@@ -99,7 +100,8 @@ export function register(app: AppHono) {
       created_at: user.created_at,
       role_nama: role?.role_nama ?? '',
     } as UserRow;
-    return c.html(renderUsersView({current_user: currentUser(c),  user: userView, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderUsersView({current_user: currentUser(c),  user: userView, user_perms: perms || {}, csrf }));
   });
   app.get('/users/:id/edit', loginRequired(), hasPermission('users', 'edit'), async (c) => {
     const db = c.env.DB;
@@ -119,7 +121,8 @@ export function register(app: AppHono) {
       created_at: user.created_at,
       role_nama: '',
     };
-    return c.html(renderUsersEdit({current_user: currentUser(c),  user: userView, roles: roles.map((r) => ({ id: r.id, nama: r.nama })), csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderUsersEdit({current_user: currentUser(c),  user: userView, roles: roles.map((r) => ({ id: r.id, nama: r.nama })), user_perms: perms || {}, csrf }));
   });
   app.post('/users/:id/edit', loginRequired(), hasPermission('users', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;

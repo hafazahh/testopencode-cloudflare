@@ -36,9 +36,11 @@ export function register(app: AppHono) {
     },
   );
   app.get('/pelanggan/create', loginRequired(), hasPermission('pelanggan', 'create'), async (c) => {
+    const db = c.env.DB;
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderPelangganCreate({current_user: currentUser(c),  csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderPelangganCreate({current_user: currentUser(c),  user_perms: perms || {}, csrf }));
   });
   app.post('/pelanggan/create', loginRequired(), hasPermission('pelanggan', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
@@ -73,7 +75,8 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderPelangganView({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderPelangganView({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, user_perms: perms || {}, csrf }));
   });
   app.get('/pelanggan/:id/edit', loginRequired(), hasPermission('pelanggan', 'edit'), async (c) => {
     const db = c.env.DB;
@@ -85,7 +88,8 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderPelangganEdit({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderPelangganEdit({current_user: currentUser(c),  pelanggan: pelanggan as PelangganRow, user_perms: perms || {}, csrf }));
   });
   app.post('/pelanggan/:id/edit', loginRequired(), hasPermission('pelanggan', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;

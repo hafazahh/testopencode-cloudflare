@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { AppHono } from '../context';
-import { listMutasiByItem } from '../db';
+import { listMutasiByItem, getUserPermissions } from '../db';
 import { StokItemRow, MutasiRow } from './render-types';
 import { renderStokKartu } from '../render';
 import {loginRequired, hasPermission, flash, currentUser } from '../auth';
@@ -35,10 +35,12 @@ export function register(app: AppHono) {
         mutasi = await listMutasiByItem(db, selected.id);
       }
 
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
       return c.html(renderStokKartu({current_user: currentUser(c), 
         items: itemsRes.results as StokItemRow[],
         selected_item: selected as StokItemRow,
         mutasi,
+        user_perms: perms || {},
         csrf,
       }));
     },

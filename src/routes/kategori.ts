@@ -36,9 +36,11 @@ export function register(app: AppHono) {
     },
   );
   app.get('/kategori/create', loginRequired(), hasPermission('kategori', 'create'), async (c) => {
+    const db = c.env.DB;
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderKategoriCreate({current_user: currentUser(c),  csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderKategoriCreate({current_user: currentUser(c),  user_perms: perms || {}, csrf }));
   });
   app.post('/kategori/create', loginRequired(), hasPermission('kategori', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
@@ -76,7 +78,8 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const itemCount = await db.prepare('SELECT COUNT(*) AS n FROM items WHERE category = ?').bind(kategori.nama).first<{ n: number }>();
-    return c.html(renderKategoriView({current_user: currentUser(c),  kategori: kategori as KategoriRow, item_count: itemCount?.n ?? 0, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderKategoriView({current_user: currentUser(c),  kategori: kategori as KategoriRow, user_perms: perms || {}, item_count: itemCount?.n ?? 0, csrf }));
   });
   app.get('/kategori/:id/edit', loginRequired(), hasPermission('kategori', 'edit'), async (c) => {
     const db = c.env.DB;
@@ -88,7 +91,8 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderKategoriEdit({current_user: currentUser(c),  kategori: kategori as KategoriRow, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderKategoriEdit({current_user: currentUser(c),  kategori: kategori as KategoriRow, user_perms: perms || {}, csrf }));
   });
   app.post('/kategori/:id/edit', loginRequired(), hasPermission('kategori', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;

@@ -6,6 +6,7 @@ import {
   createRole,
   updateRole,
   deleteRole,
+  getUserPermissions,
 } from '../db';
 import { RoleRow } from './render-types';
 import {
@@ -45,9 +46,11 @@ export function register(app: AppHono) {
     },
   );
   app.get('/roles/create', loginRequired(), hasPermission('roles', 'create'), async (c) => {
+    const db = c.env.DB;
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderRolesCreate({current_user: currentUser(c),  menus: MENUS as never, actions: ACTIONS as never, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderRolesCreate({current_user: currentUser(c),  menus: MENUS as never, actions: ACTIONS as never, user_perms: perms || {}, csrf }));
   });
   app.post('/roles/create', loginRequired(), hasPermission('roles', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
@@ -91,7 +94,8 @@ export function register(app: AppHono) {
     const csrf = session?.csrf_token ?? '';
     const perms = role.permissions ? JSON.parse(role.permissions) : {};
     const userCount = await db.prepare('SELECT COUNT(*) AS n FROM users WHERE role_id = ?').bind(id).first<{ n: number }>();
-    return c.html(renderRolesView({current_user: currentUser(c),  role: role as RoleRow, permissions: perms, user_count: userCount?.n ?? 0, csrf }));
+    const userPerms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderRolesView({current_user: currentUser(c),  role: role as RoleRow, permissions: perms, user_count: userCount?.n ?? 0, user_perms: userPerms || {}, csrf }));
   });
   app.get('/roles/:id/edit', loginRequired(), hasPermission('roles', 'edit'), async (c) => {
     const db = c.env.DB;
@@ -104,7 +108,8 @@ export function register(app: AppHono) {
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
     const perms = role.permissions ? JSON.parse(role.permissions) : {};
-    return c.html(renderRolesEdit({current_user: currentUser(c),  role: role as RoleRow, permissions: perms, current_perms: perms, menus: MENUS as never, actions: ACTIONS as never, csrf }));
+    const userPerms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderRolesEdit({current_user: currentUser(c),  role: role as RoleRow, permissions: perms, current_perms: perms, menus: MENUS as never, actions: ACTIONS as never, user_perms: userPerms || {}, csrf }));
   });
   app.post('/roles/:id/edit', loginRequired(), hasPermission('roles', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;

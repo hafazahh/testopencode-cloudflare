@@ -37,9 +37,11 @@ export function register(app: AppHono) {
     },
   );
   app.get('/supplier/create', loginRequired(), hasPermission('supplier', 'create'), async (c) => {
+    const db = c.env.DB;
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderSupplierCreate({current_user: currentUser(c),  csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderSupplierCreate({current_user: currentUser(c),  user_perms: perms || {}, csrf }));
   });
   app.post('/supplier/create', loginRequired(), hasPermission('supplier', 'create'), csrfProtect(), async (c) => {
     const db = c.env.DB;
@@ -73,7 +75,8 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderSupplierView({current_user: currentUser(c),  supplier: supplier as SupplierRow, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderSupplierView({current_user: currentUser(c),  supplier: supplier as SupplierRow, user_perms: perms || {}, csrf }));
   });
   app.get('/supplier/:id/edit', loginRequired(), hasPermission('supplier', 'edit'), async (c) => {
     const db = c.env.DB;
@@ -85,7 +88,8 @@ export function register(app: AppHono) {
     }
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    return c.html(renderSupplierEdit({current_user: currentUser(c),  supplier: supplier as SupplierRow, csrf }));
+    const perms = await getUserPermissions(db, c.get('userId') ?? 0);
+    return c.html(renderSupplierEdit({current_user: currentUser(c),  supplier: supplier as SupplierRow, user_perms: perms || {}, csrf }));
   });
   app.post('/supplier/:id/edit', loginRequired(), hasPermission('supplier', 'edit'), csrfProtect(), async (c) => {
     const db = c.env.DB;
