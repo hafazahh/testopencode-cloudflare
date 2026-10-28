@@ -168,6 +168,22 @@ async function main() {
     d1(`INSERT OR IGNORE INTO kategori (nama, deskripsi) VALUES (?, ?)`, [k.nama, k.deskripsi]);
   }
 
+  // 3b. Supplier contoh (INSERT OR IGNORE, nama UNIQUE) — WAJIB ada minimal
+  // satu baris: dropdown Supplier di form Pembelian mengisi opsinya dari D1
+  // (`listSupplier`), jadi dengan tabel kosong form tidak bisa disubmit sama
+  // sekali (field `required` tanpa pilihan). PITFALL: dulu hanya harness test
+  // yang seed supplier, remote/lokal tidak — dropdown kosong di produksi.
+  const supplier = [
+    { nama: "PT Sumber Makmur", kontak: "08123456789", alamat: "Jl. Raya Industri No. 1" },
+    { nama: "CV Karya Jaya", kontak: "085678901234", alamat: "Jl. Pasar Baru No. 7" },
+  ];
+  for (const s of supplier) {
+    d1(
+      `INSERT OR IGNORE INTO supplier (nama, kontak, alamat) VALUES (?, ?, ?)`,
+      [s.nama, s.kontak, s.alamat]
+    );
+  }
+
   // 4. User demo (password_hash PBKDF2 saja)
   // Sumber daftar akun: DEMO_USERS di src/context.ts (dipakai juga halaman
   // login). Password plaintext TIDAK disimpan di D1 — hanya hash-nya di sini.
