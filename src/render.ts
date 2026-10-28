@@ -868,10 +868,19 @@ export function renderPembelianIndex(props: { pembelian: PembelianRow[]; user_pe
   return renderBaseItem({ current_user: props.current_user,  title: 'Daftar Pembelian - CRUD Item', user_perms, csrf_token: csrf, content: listHeader + table });
 }
 
-export function renderPembelianCreate(props: { items?: { id: number; nama: string; harga_pokok: number }[]; supplier_id?: number; tanggal?: string; catatan?: string; csrf: string } & PageProps): string {
-  const { items = [], tanggal = '', catatan = '' } = props;
+export function renderPembelianCreate(props: { items?: { id: number; nama: string; harga_pokok: number }[]; suppliers?: { id: number; nama: string }[]; supplier_id?: number; tanggal?: string; catatan?: string; csrf: string } & PageProps): string {
+  const { items = [], suppliers = [], tanggal = '', catatan = '' } = props;
+  // Supplier wajib dari prop terpisah (bukan query item) — sebelumnya dropdown
+  // hanya berisi placeholder `-- Pilih Supplier --` sehingga form ber-`required`
+  // tidak bisa disubmit (pembelian mati total). Pola opsi mengikuti
+  // `catOptions` di renderCreateItem: string opsi mentah → raw() supaya
+  // tidak ter-escape ganda oleh tagged template `html`.
+  const supplierOptions = suppliers.map((s) => {
+    const selected = props.supplier_id === s.id ? 'selected' : '';
+    return `<option value="${s.id}" ${selected}>${escapeHtml(s.nama)}</option>`;
+  }).join('');
   const itemsJson = items.map(i => JSON.stringify({ id: i.id, nama: i.nama, harga_pokok: i.harga_pokok })).join(',');
-  return renderBaseItem({ current_user: props.current_user, 
+  return renderBaseItem({ current_user: props.current_user,
     title: 'Tambah Pembelian - CRUD Item',
     user_perms: {},
     csrf_token: props.csrf,
@@ -881,7 +890,7 @@ export function renderPembelianCreate(props: { items?: { id: number; nama: strin
           <div class="form-group">
             <label for="supplier_id">Supplier</label>
             <select id="supplier_id" name="supplier_id" required>
-              <option value="">-- Pilih Supplier --</option>
+              <option value="">-- Pilih Supplier --</option>${raw(supplierOptions)}
             </select>
           </div>
           <div class="form-group">

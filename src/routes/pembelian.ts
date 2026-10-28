@@ -46,9 +46,18 @@ export function register(app: AppHono) {
     const db = c.env.DB;
     const session = c.get('session');
     const csrf = session?.csrf_token ?? '';
-    const items = await db.prepare('SELECT id, nama, harga_pokok FROM items ORDER BY nama').all();
+    // Dropdown supplier sebelumnya selalu KOSONG: handler hanya query `items`
+    // lalu render hanya mengisi pilihan item di baris detail. Form memakai
+    // supplier_id ber-`required`, jadi tidak bisa disubmit sama sekali.
+    // Kini supplier diambil dari tabel supplier (listSupplier) dan dikirim ke
+    // renderPembelianCreate sebagai prop `suppliers`.
+    const [items, suppliers] = await Promise.all([
+      db.prepare('SELECT id, nama, harga_pokok FROM items ORDER BY nama').all(),
+      listSupplier(db),
+    ]);
     return c.html(renderPembelianCreate({current_user: currentUser(c), 
       items: items.results as { id: number; nama: string; harga_pokok: number }[],
+      suppliers: suppliers.map((s) => ({ id: s.id, nama: s.nama })),
       csrf,
     }));
   });
