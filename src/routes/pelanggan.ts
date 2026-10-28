@@ -31,7 +31,14 @@ export function register(app: AppHono) {
       const session = c.get('session');
       const csrf = session?.csrf_token ?? '';
       const rows = await listPelanggan(db);
-      const perms = await c?.env?.DB ? db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first() : {};
+      // getUserPermissions mengembalikan permissions yang sudah di-JSON.parse
+      // menjadi Record<string, string[]>. Versi lama query .first() mentah —
+      // hasilnya objek { permissions: "<json string>" } sehingga Object.keys()
+      // hanya menghasilkan ["permissions"] dan navLinks tidak mengenali menu
+      // apa pun (nav kosong). users.ts/roles.ts mem-parse manual; items.ts,
+      // kategori.ts, supplier.ts memakai helper ini. Pakai helper satu ini
+      // supaya bentuk datanya konsisten di semua route.
+      const perms = await getUserPermissions(db, c.get('userId') ?? 0);
       return c.html(renderPelangganIndex({current_user: currentUser(c),  pelanggan: toRows(rows), user_perms: perms || {}, csrf }));
     },
   );

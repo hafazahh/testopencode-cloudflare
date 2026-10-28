@@ -66,8 +66,18 @@ async function main() {
 
   // --- [1] NAV TIDAK KOSONG di semua halaman non-login ---
   console.log('[1] NAV MENU TIDAK KOSONG (>= 5 <a class="btn-nav"> di <nav>)');
+  // SEMUA halaman index WAJIB masuk: bug /pelanggan (query permissions mentah
+  // tanpa JSON.parse → Object.keys hanya ["permissions"] → nav kosong) lolos
+  // dari ronde ini karena daftar awalnya hanya memuat halaman non-index.
   const PAGES = [
     '/',
+    '/kategori',
+    '/pelanggan',
+    '/supplier',
+    '/users',
+    '/roles',
+    '/pembelian',
+    '/penjualan',
     '/item/create',
     '/item/1',
     '/item/1/edit',
