@@ -15,11 +15,18 @@
 //   Asersi: di `/users`, tombol Hapus ADA di baris user lain, TIDAK ADA di
 //   baris user yang sedang login (admin).
 //
-// TEMUAN 3 (FEATURE): tampilkan kredensial demo di halaman login.
-//   Akun demo (admin/kasir/gudang) tampil di `/login` — password polos untuk
-//   demo portfolio, TIDAK disimpan plaintext di D1 (hanya hash PBKDF2).
-//   Asersi: `/login` memuat tabel Akun Demo dengan 3 baris username+password
-//   persis dari DEMO_USERS, dan ketiga akun benar-benar bisa login.
+// TEMUAN 3 (FEATURE, revisi 2026-10-29): SATU tabel user di halaman login.
+//   Semula /login punya DUA tabel ("Informasi Login" Username|Role dari D1 +
+//   "Akun Demo" Peran|Username|Password dari DEMO_USERS, termasuk baris admin).
+//   Sekarang hanya TEPAT SATU tabel: Peran|Username|Password — diambil dari
+//   DEMO_USERS yang difilter TANPA role admin (admin hanya menyembunyikan
+//   baris utuh di tampilan; DEMO_USERS di context.ts tetap 3 akun karena
+//   scripts/seed.mjs & test login admin masih membutuhkannya). Password polos
+//   untuk demo portfolio, TIDAK disimpan plaintext di D1 (hanya hash PBKDF2).
+//   Asersi: div `login-info` berisi TEPAT 1 <table>, header
+//   Peran|Username|Password, baris kasir & gudang + password ADa, baris admin
+//   (admin123 / <td>Administrator</td>) TIDAK ADA, dan tidak ada <tr></tr>
+//   kosong — serta ketiga akun tetap benar-benar bisa login.
 
 import { Client, D1Mock, createApp } from './_harness.mjs';
 
@@ -67,23 +74,36 @@ async function main() {
   const db = new D1Mock();
   const env = { DB: db, ENVIRONMENT: 'local', SITE_URL: 'http://localhost:8790' };
 
-  // ---------- [1] TEMUAN 3: tabel Akun Demo di halaman login ----------
-  console.log('[1] HALAMAN LOGIN MEMUAT TABEL AKUN DEMO (3 baris)');
+  // ---------- [1] TEMUAN 3: TEPAT SATU tabel user di halaman login ----------
+  console.log('[1] HALAMAN LOGIN: SATU TABEL USER (Peran/Username/Password, tanpa admin)');
   const anon = new Client(app, env);
   const loginPage = await anon.get('/login');
   check('/login status 200', loginPage.status === 200, `got ${loginPage.status}`);
-  check('/login memuat judul "Akun Demo"', loginPage.body.includes('Akun Demo'));
-  for (const u of DEMO_USERS) {
+  const infoDiv = (loginPage.body.match(/<div class="login-info">([\s\S]*?)\n\s*<\/div>/) || [])[1] || '';
+  const tableCount = (infoDiv.match(/<table/g) || []).length;
+  check('/login punya TEPAT SATU tabel user di div login-info', tableCount === 1, `ditemukan ${tableCount} <table`);
+  check(
+    'tabel itu berheader Peran | Username | Password',
+    infoDiv.includes('<th scope="col">Peran</th>') &&
+    infoDiv.includes('<th scope="col">Username</th>') &&
+    infoDiv.includes('<th scope="col">Password</th>')
+  );
+  for (const u of [DEMO_USERS[1], DEMO_USERS[2]]) {
     check(
-      `/login baris demo ${u.username}`,
-      loginPage.body.includes(`<td>${u.role}</td>`) &&
-      loginPage.body.includes(`<td>${u.username}</td>`) &&
-      loginPage.body.includes(`<td>${u.password}</td>`),
+      `/login baris ${u.username} ADA dengan password`,
+      infoDiv.includes(`<td>${u.username}</td>`) &&
+      infoDiv.includes(`<td>${u.password}</td>`) &&
+      infoDiv.includes(`<td>${u.role}</td>`),
       'baris peran/username/password tidak lengkap'
     );
   }
-  const demoRows = (loginPage.body.match(/<td>(Administrator|Kasir|Gudang)<\/td>/g) || []).length;
-  check('tabel demo punya tepat 3 baris', demoRows === 3, `ditemukan ${demoRows} baris`);
+  check(
+    'baris admin TIDAK ADA di tabel (tanpa admin123 / Administrator)',
+    !infoDiv.includes('admin123') && !infoDiv.includes('<td>Administrator</td>'),
+    'baris admin masih tampil di halaman login'
+  );
+  const emptyRows = (loginPage.body.match(/<tr><\/tr>|<tr>\s*<\/tr>/g) || []).length;
+  check('tidak ada <tr></tr> kosong', emptyRows === 0, `ditemukan ${emptyRows} baris kosong`);
 
   // ---------- [2] TEMUAN 1: dropdown supplier terisi ----------
   console.log('[2] DROPDOWN SUPPLIER DI /pembelian/create TERISI');

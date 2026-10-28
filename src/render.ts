@@ -403,27 +403,27 @@ export function renderError(props: { code: string; title: string; message: strin
 }
 
 export function renderLogin(props: { csrf: string; non_admin_users?: { username: string; role_nama: string }[]; flashMessages?: Flash[] }): string {
-  const { csrf, non_admin_users = [], flashMessages } = props;
-  const usersRows = non_admin_users.map(u => html`
-    <tr>
-      <td>${u.username}</td>
-      <td>${u.role_nama}</td>
-    </tr>
-  `).join('');
-  // Tabel kredensial demo portfolio. Password sengaja ditampilkan polos agar
-  // pengunjung bisa langsung mencoba login — persetujuan user, dan TIDAK ada
-  // plaintext yang disimpan ke D1 (D1 hanya menyimpan hash PBKDF2; seed di
-  // scripts/seed.mjs menuruti pola admin). Sumber data: DEMO_USERS di
-  // context.ts (satu tempat) supaya seed dan tampilan tidak pernah beda.
-  // Pola html + raw() mengikuti tabel non_admin_users di atas.
-  const demoRows = DEMO_USERS.map(u => html`
+  const { csrf, flashMessages } = props;
+  // SATU SATUNYA tabel user di halaman login: kredensial demo dengan password
+  // polos (demo portfolio — persetujuan user). Tabel lama "Informasi Login"
+  // dihapus (user tak lagi tampil dua kali duanya).
+  // Filter TIDAK boleh menyentuh DEMO_USERS di context.ts: scripts/seed.mjs
+  // memakainya untuk membuat akun admin/kasir/gudang, dan test login admin
+  // butuh. Baris admin disaring hanya di tampilan ini.
+  const demoUsers = DEMO_USERS.filter(
+    (u) => u.username !== 'admin' && u.role !== 'Administrator'
+  );
+  // Password TIDAK disimpan plaintext ke D1 (D1 hanya menyimpan hash PBKDF2;
+  // seed di scripts/seed.mjs menuruti pola admin). Sumber data: DEMO_USERS di
+  // context.ts supaya seed dan tampilan tidak pernah beda. Baris kosong tidak
+  // dirender (filter di atas membuang admin utuh — bukan menyembunyikan sel).
+  const demoRows = demoUsers.map(u => html`
     <tr>
       <td>${u.role}</td>
       <td>${u.username}</td>
       <td>${u.password}</td>
     </tr>
   `).join('');
-  const demoTable = raw(html`<table class="data-table"><thead><tr><th scope="col">Peran</th><th scope="col">Username</th><th scope="col">Password</th></tr></thead><tbody>${raw(demoRows)}</tbody></table>`);
   return renderBaseItem({
     title: 'Login - CRUD Item',
     user_perms: {},
@@ -450,14 +450,11 @@ export function renderLogin(props: { csrf: string; non_admin_users?: { username:
           <button type="submit" class="btn btn-primary">Login</button>
         </form>
         <div class="login-info">
-          <h3>Informasi Login</h3>
-          <p>User yang terdaftar (selain admin):</p>
-          ${non_admin_users.length
-              ? raw(html`<table class="data-table"><thead><tr><th scope="col">Username</th><th scope="col">Role</th></tr></thead><tbody>${raw(usersRows)}</tbody></table>`)
-              : raw(html`<p>Belum ada user non-admin. Buat user baru melalui akun admin.</p>`)}
           <h3>Akun Demo</h3>
           <p>Silakan login dengan salah satu akun berikut untuk mencoba aplikasi:</p>
-          ${demoTable}
+          ${demoUsers.length
+              ? raw(html`<table class="data-table"><thead><tr><th scope="col">Peran</th><th scope="col">Username</th><th scope="col">Password</th></tr></thead><tbody>${raw(demoRows)}</tbody></table>`)
+              : raw(html`<p>Belum ada akun demo. Buat user baru melalui akun admin.</p>`)}
           <p class="login-info-note">Ganti password default setelah login pertama untuk keamanan.</p>
         </div>
       </div>
