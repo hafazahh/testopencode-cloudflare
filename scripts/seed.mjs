@@ -4,7 +4,9 @@
  * Jalankan `SCHEMA_SQL` sebagai batch D1, lalu isi data awal secara idempoten:
  *   - 3 role (admin / kasir / gudang) + permissions JSON persis dari app.py
  *   - 4 kategori
- *   - user admin (password_hash PBKDF2 saja; tanpa password_plain)
+ *   - user demo admin / kasir / gudang (password_hash PBKDF2 saja; tanpa
+ *     password_plain; password plaintext tetap ada di src/context.ts
+ *     DEMO_USERS untuk ditampilkan di halaman login)
  *
  * Usage:
  *   node scripts/seed.mjs             # D1 lokal (wrangler dev / d1 execute --local)
@@ -21,6 +23,20 @@ const remote = process.argv.includes("--remote");
 const schemaSrc = readFileSync(new URL("../src/schema.ts", import.meta.url), "utf8");
 const m = schemaSrc.match(/export const SCHEMA_SQL = `([\s\S]*?)`;/);
 const SCHEMA_SQL = m ? m[1] : "";
+
+// Akun demo dari src/context.ts (DEMO_USERS) — satu sumber kebenaran dengan
+// halaman login. Plain `node` tidak bisa import .ts, jadi array-nya diparsing
+// dari sumbernya. Field plaintext password sengaja TIDAK ditulis ke D1; hanya
+// hash-nya (lihat loop user demo di bawah).
+const contextSrc = readFileSync(new URL("../src/context.ts", import.meta.url), "utf8");
+const demoBlock = contextSrc.match(/export const DEMO_USERS[^=]*=\s*(\[[\s\S]*?\]);/);
+const DEMO_USERS = demoBlock
+  ? [...demoBlock[1].matchAll(/\{\s*username:\s*'([^']+)',\s*password:\s*'([^']+)',\s*role:\s*'([^']+)'\s*\}/g)]
+      .map(([, username, password, role]) => ({ username, password, role }))
+  : [];
+if (DEMO_USERS.length === 0) {
+  throw new Error("DEMO_USERS tidak terbaca dari src/context.ts — seed user demo dilewati.");
+}
 
 /** Render a value as a SQL literal. */
 function sqlLiteral(v) {
@@ -152,23 +168,37 @@ async function main() {
     d1(`INSERT OR IGNORE INTO kategori (nama, deskripsi) VALUES (?, ?)`, [k.nama, k.deskripsi]);
   }
 
-  // 4. User admin (password_hash PBKDF2 saja)
+  // 4. User demo (password_hash PBKDF2 saja)
+  // Sumber daftar akun: DEMO_USERS di src/context.ts (dipakai juga halaman
+  // login). Password plaintext TIDAK disimpan di D1 — hanya hash-nya di sini.
+  //
   // ON CONFLICT DO UPDATE supaya hash acak dari seed lama (yang tidak pernah
   // cocok dengan password apa pun) tertimpa, bukan diabaikan oleh OR IGNORE.
-  const salt = randomBytes(16).toString("base64url");
-  const adminHash = pbkdf2Hash("admin123", salt);
-  d1(
-    `INSERT INTO users (username, password_hash, role_id)
-     SELECT 'admin', ?, id FROM roles WHERE nama = 'admin'
-     ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash`,
-    [adminHash]
-  );
+  // Idempoten: jalankan 2x tetap 3 user.
+  const seedUsers = DEMO_USERS.map((u) => ({
+    username: u.username,
+    password: u.password,
+    role: u.username, // username === nama role (admin/kasir/gudang)
+  }));
+  for (const u of seedUsers) {
+    // Salt baru tiap user -> hash baru-tetap-valid; password benar-benar
+    // diverifikasi oleh verifyPassword() di src/auth.ts.
+    const salt = randomBytes(16).toString("base64url");
+    const hash = pbkdf2Hash(u.password, salt);
+    d1(
+      `INSERT INTO users (username, password_hash, role_id)
+       SELECT ?, ?, id FROM roles WHERE nama = ?
+       ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash, role_id = excluded.role_id`,
+      [u.username, hash, u.role]
+    );
+  }
 
   // 5. Verifikasi ringkas
   const out = d1(
     `SELECT (SELECT COUNT(*) FROM roles) AS roles,
             (SELECT COUNT(*) FROM kategori) AS kategori,
-            (SELECT COUNT(*) FROM users) AS users`
+            (SELECT COUNT(*) FROM users) AS users,
+            (SELECT GROUP_CONCAT(username) FROM users) AS usernames`
   );
   log("Jumlah baris:", typeof out === "string" ? out : JSON.stringify(out));
 

@@ -18,6 +18,20 @@ const _schemaSrc = readFileSync(new URL('../../src/schema.ts', import.meta.url),
 const _m = _schemaSrc.match(/export const SCHEMA_SQL = `([\s\S]*?)`;/);
 export const SCHEMA_SQL = _m ? _m[1] : '';
 
+// Akun demo dari src/context.ts (DEMO_USERS) — SATU sumber dengan halaman
+// login, jadi test login user kasir/gudang memakai kredensial yang persis
+// diperlihatkan ke pengunjung. Plain node tidak bisa import .ts → parse sumber.
+const _contextSrc = readFileSync(new URL('../../src/context.ts', import.meta.url), 'utf8');
+const _demoBlock = _contextSrc.match(
+  /export const DEMO_USERS[^=]*=\s*(\[[\s\S]*?\]);/
+);
+const DEMO_USERS_SEED = _demoBlock
+  ? [..._demoBlock[1].matchAll(
+      /\{\s*username:\s*'([^']+)',\s*password:\s*'([^']+)',\s*role:\s*'([^']+)'\s*\}/g
+    )].map(([, username, password, role]) => ({ username, password, role }))
+  : [];
+export { DEMO_USERS_SEED };
+
 // ---------- crypto helpers (match src/auth.ts pbkdf2 format) ----------
 function b64url(buf) {
   let bin = '';
@@ -151,6 +165,22 @@ export class D1Mock {
     this.db.prepare(
       "INSERT OR IGNORE INTO users (username, password_hash, role_id) SELECT 'admin', ?, id FROM roles WHERE nama = 'admin'",
     ).run(_adminHash);
+    // demo users (idempoten) — kasir + gudang, hash PBKDF2 asli (bukan random).
+    // Mengikuti DEMO_USERS di src/context.ts supaya test login ketiga akun
+    // memakai kredensial yang sama dengan yang ditampilkan di halaman login.
+    for (const u of DEMO_USERS_SEED) {
+      this.db.prepare(
+        "INSERT OR IGNORE INTO users (username, password_hash, role_id) SELECT ?, ?, id FROM roles WHERE nama = ?",
+      ).run(u.username, hashPassword(u.password), u.username);
+    }
+    // supplier contoh: dropdown Supplier di form pembelian harus punya >= 1
+    // opsi nyata (bukan hanya placeholder) agar form bisa disubmit.
+    this.db.prepare(
+      "INSERT OR IGNORE INTO supplier (nama, kontak, alamat) VALUES (?, ?, ?)",
+    ).run('PT Sumber Makmur', '08123456789', 'Jl. Raya Industri No. 1');
+    this.db.prepare(
+      "INSERT OR IGNORE INTO supplier (nama, kontak, alamat) VALUES (?, ?, ?)",
+    ).run('CV Karya Jaya', '085678901234', 'Jl. Pasar Baru No. 7');
   }
 }
 

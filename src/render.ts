@@ -6,9 +6,10 @@
  * template `html` (escape & < > " ') sehingga XSS tidak mungkin. HTML tidak
  * disusun dengan `+` terhadap data user.
  *
- * Route HTTP (src/index.ts) memanggil fungsi-fungsi ini nanti (Fase E). Di sini
+ * route HTTP (src/index.ts) memanggil fungsi-fungsi ini nanti (Fase E). Di sini
  * HANYA fungsi render yang dipakai oleh route.
  */
+import { DEMO_USERS } from './context';
 
 // ---------- helpers umum ----
 
@@ -409,6 +410,20 @@ export function renderLogin(props: { csrf: string; non_admin_users?: { username:
       <td>${u.role_nama}</td>
     </tr>
   `).join('');
+  // Tabel kredensial demo portfolio. Password sengaja ditampilkan polos agar
+  // pengunjung bisa langsung mencoba login — persetujuan user, dan TIDAK ada
+  // plaintext yang disimpan ke D1 (D1 hanya menyimpan hash PBKDF2; seed di
+  // scripts/seed.mjs menuruti pola admin). Sumber data: DEMO_USERS di
+  // context.ts (satu tempat) supaya seed dan tampilan tidak pernah beda.
+  // Pola html + raw() mengikuti tabel non_admin_users di atas.
+  const demoRows = DEMO_USERS.map(u => html`
+    <tr>
+      <td>${u.role}</td>
+      <td>${u.username}</td>
+      <td>${u.password}</td>
+    </tr>
+  `).join('');
+  const demoTable = raw(html`<table class="data-table"><thead><tr><th scope="col">Peran</th><th scope="col">Username</th><th scope="col">Password</th></tr></thead><tbody>${raw(demoRows)}</tbody></table>`);
   return renderBaseItem({
     title: 'Login - CRUD Item',
     user_perms: {},
@@ -440,6 +455,9 @@ export function renderLogin(props: { csrf: string; non_admin_users?: { username:
           ${non_admin_users.length
               ? raw(html`<table class="data-table"><thead><tr><th scope="col">Username</th><th scope="col">Role</th></tr></thead><tbody>${raw(usersRows)}</tbody></table>`)
               : raw(html`<p>Belum ada user non-admin. Buat user baru melalui akun admin.</p>`)}
+          <h3>Akun Demo</h3>
+          <p>Silakan login dengan salah satu akun berikut untuk mencoba aplikasi:</p>
+          ${demoTable}
           <p class="login-info-note">Ganti password default setelah login pertama untuk keamanan.</p>
         </div>
       </div>
