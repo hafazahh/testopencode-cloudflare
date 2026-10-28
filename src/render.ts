@@ -1300,13 +1300,19 @@ export function renderLaporanStok(props: { items: StokItemRow[]; total_items?: n
 }
 
 // ---------- users ----------
-export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<string, string[]>; csrf: string } & PageProps): string {
-  const { users, user_perms, csrf } = props;
+export function renderUsersIndex(props: { users: UserRow[]; user_perms: Record<string, string[]>; csrf: string; current_user_id?: number } & PageProps): string {
+  const { users, user_perms, csrf, current_user_id } = props;
   const rows = users.map((u, i) => {
     const edit = user_perms.users?.includes('edit')
       ? html`<a href="/users/${u.id}/edit" class="btn btn-small btn-edit">Edit</a>`
       : '';
-    const del = user_perms.users?.includes('delete') && Number(u.id) !== Number(csrf)
+    // Bandingkan id baris dengan id user yang SEDANG LOGIN. Versi lama salah:
+    // membandingkan `Number(u.id)` dengan `Number(csrf)` — `csrf` adalah token
+    // random sehingga `Number(csrf)` = NaN, kondisi selalu true ALAIHAL
+    // maksudnya (sembunyikan tombol hapus untuk diri sendiri) tidak tercapai.
+    // Handler delete sudah benar menolak hapus diri sendiri (id === userId),
+    // tapi UI harus konsisten: tombol hapus disembunyikan di baris sendiri.
+    const del = user_perms.users?.includes('delete') && u.id !== current_user_id
       ? html`<form method="POST" action="/users/${u.id}/delete" style="display:inline;" data-confirm="Hapus user ini?">${csrfField(csrf)}<button type="submit" class="btn btn-small btn-danger">Hapus</button></form>`
       : '';
     return html`

@@ -35,7 +35,9 @@ export function register(app: AppHono) {
       const rows = (await db.prepare('SELECT u.*, r.nama as role_nama FROM users u JOIN roles r ON u.role_id = r.id ORDER BY u.id DESC').all<UserRow>()).results;
       const permsRow = await db.prepare("SELECT r.permissions FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?").bind(c.get('userId') ?? 0).first();
       const perms = permsRow ? (JSON.parse(String(permsRow.permissions ?? '')) as Record<string, string[]>) : {};
-      return c.html(renderUsersIndex({current_user: currentUser(c),  users: toRows(rows), user_perms: perms || {}, csrf }));
+      // current_user_id: supaya renderUsersIndex bisa menyembunyikan tombol
+      // Hapus di baris user yang sedang login (lihat Temuan 2 di render.ts).
+      return c.html(renderUsersIndex({current_user: currentUser(c),  users: toRows(rows), user_perms: perms || {}, csrf, current_user_id: c.get('userId') ?? undefined }));
     },
   );
   app.get('/users/create', loginRequired(), hasPermission('users', 'create'), async (c) => {
